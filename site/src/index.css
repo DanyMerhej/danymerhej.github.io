@@ -1,0 +1,201 @@
+@import './fonts.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --c-canvas: 10 11 13;
+    --c-surface: 17 19 23;
+    --c-raised: 24 27 32;
+    --c-ink: 240 240 238;
+    --c-muted: 156 160 166;
+    --c-faint: 108 113 122;
+    --c-line: 40 44 51;
+    /* `signal` is the brand fill; `accent` is the readable text version of it. */
+    --c-signal: 198 249 78;
+    --c-signal-ink: 10 11 13;
+    --c-accent: 198 249 78;
+    --c-violet: 124 107 255;
+    --grain-opacity: 0.038;
+  }
+
+  html.light {
+    --c-canvas: 245 242 234;
+    --c-surface: 252 250 245;
+    --c-raised: 255 255 255;
+    --c-ink: 22 23 26;
+    --c-muted: 88 92 99;
+    --c-faint: 132 136 143;
+    --c-line: 223 218 205;
+    /* The lime stays the brand on paper; accent text darkens for contrast. */
+    --c-signal: 173 224 60;
+    --c-signal-ink: 22 23 26;
+    --c-accent: 78 106 4;
+    --c-violet: 91 74 224;
+    --grain-opacity: 0.025;
+  }
+
+  * {
+    @apply border-line;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+    font-optical-sizing: auto;
+  }
+
+  body {
+    @apply bg-canvas text-ink font-sans antialiased;
+    overflow-x: hidden;
+    font-feature-settings: 'cv05' 1, 'ss01' 1;
+  }
+
+  ::selection {
+    background: rgb(var(--c-signal));
+    color: rgb(var(--c-signal-ink));
+  }
+
+  :focus-visible {
+    outline: 2px solid rgb(var(--c-accent));
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--c-canvas));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--c-line));
+    border-radius: 99px;
+    border: 3px solid rgb(var(--c-canvas));
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--c-faint));
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+    }
+  }
+}
+
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-shell px-5 sm:px-8 lg:px-12;
+  }
+
+  .eyebrow {
+    @apply font-mono text-[11px] uppercase tracking-[0.22em] text-faint;
+  }
+
+  .rule {
+    @apply h-px w-full bg-line;
+  }
+
+  /* A hairline grid that sits behind the whole page. */
+  .grid-field {
+    background-image: linear-gradient(rgb(var(--c-line) / 0.5) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(var(--c-line) / 0.5) 1px, transparent 1px);
+    background-size: 72px 72px;
+    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 78%);
+    -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 78%);
+  }
+
+  .glass {
+    background: rgb(var(--c-surface) / 0.72);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium
+           transition-all duration-300 ease-out;
+  }
+
+  .btn-primary {
+    @apply btn bg-signal text-signal-ink hover:brightness-110;
+    box-shadow: 0 0 0 0 rgb(var(--c-signal) / 0.4);
+  }
+  .btn-primary:hover {
+    box-shadow: 0 8px 34px -8px rgb(var(--c-signal) / 0.55);
+    transform: translateY(-1px);
+  }
+
+  .btn-ghost {
+    @apply btn border border-line text-ink hover:border-faint;
+  }
+  .btn-ghost:hover {
+    background: rgb(var(--c-raised) / 0.7);
+    transform: translateY(-1px);
+  }
+
+  .chip {
+    @apply inline-flex items-center rounded-full border border-line px-3 py-1
+           font-mono text-[11px] tracking-tight text-muted transition-colors duration-200;
+  }
+  .chip:hover {
+    @apply border-faint text-ink;
+  }
+
+  .card {
+    @apply relative overflow-hidden rounded-3xl border border-line bg-surface;
+  }
+
+  .link-underline {
+    background-image: linear-gradient(rgb(var(--c-accent)), rgb(var(--c-accent)));
+    background-size: 0% 1px;
+    background-position: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .link-underline:hover {
+    background-size: 100% 1px;
+  }
+
+  /* Fine film grain over the whole page — kills banding on the big gradients. */
+  .grain::after {
+    content: '';
+    position: fixed;
+    inset: -50%;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: var(--grain-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .mask-fade-x {
+    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  }
+}
