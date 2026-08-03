@@ -4,6 +4,7 @@ import {
   Compass,
   Copy,
   Github,
+  Instagram,
   Linkedin,
   Mail,
   MoonStar,
@@ -11,14 +12,14 @@ import {
   Search,
 } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { profile, projects, sections } from '../data/site';
+import { profile, projects, sections, ventures } from '../data/site';
 import { useScrollLock, useTheme } from '../lib/hooks';
 
 interface Item {
   id: string;
   label: string;
   hint: string;
-  group: 'Navigate' | 'Projects' | 'Contact' | 'Preferences';
+  group: 'Navigate' | 'Projects' | 'Beyond code' | 'Contact' | 'Preferences';
   icon: React.ReactNode;
   run: () => void;
 }
@@ -61,6 +62,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           onClose();
           window.dispatchEvent(new CustomEvent('open-project', { detail: p.id }));
         },
+      })),
+      ...ventures.map<Item>((v) => ({
+        id: `venture-${v.id}`,
+        label: v.name,
+        hint: `${v.kind} · ${v.handle}`,
+        group: 'Beyond code',
+        icon: <Instagram className="h-4 w-4" />,
+        run: open_(v.href),
       })),
       {
         id: 'mail',
@@ -111,6 +120,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         group: 'Contact',
         icon: <Github className="h-4 w-4" />,
         run: open_(profile.github),
+      },
+      {
+        id: 'instagram',
+        label: 'Instagram',
+        hint: profile.instagramHandle,
+        group: 'Contact',
+        icon: <Instagram className="h-4 w-4" />,
+        run: open_(profile.instagram),
       },
       {
         id: 'theme',

@@ -44,7 +44,7 @@ export function Hero() {
           <span className="eyebrow">{profile.location}</span>
         </motion.div>
 
-        {/* Name — letters stagger in, then behave as one block. */}
+        {/* Name: letters stagger in, then behave as one block. */}
         <h1 className="mt-9 font-display font-extrabold leading-[0.85]">
           <motion.span {...rise(0.12)} className="block text-10xl">
             DANNY

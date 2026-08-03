@@ -26,7 +26,7 @@ export function Projects() {
       <SectionHeading
         index="02 / Projects"
         title="Six products, built end to end."
-        lead="Everything below I designed and built myself — schema, security model, API, interface, deployment and store listing. Two are trading today, the rest are in active development."
+        lead="Everything below I designed and built myself: schema, security model, API, interface, deployment and store listing. Two are trading today, the rest are in active development."
       />
 
       <div className="grid gap-5 md:grid-cols-2">

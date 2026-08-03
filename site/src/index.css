@@ -168,7 +168,7 @@
     background-size: 100% 1px;
   }
 
-  /* Fine film grain over the whole page — kills banding on the big gradients. */
+  /* Fine film grain over the whole page, which kills banding on the big gradients. */
   .grain::after {
     content: '';
     position: fixed;

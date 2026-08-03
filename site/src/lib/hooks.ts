@@ -28,7 +28,7 @@ const themeStore = {
     try {
       localStorage.setItem(STORAGE_KEY, next);
     } catch {
-      /* private mode — the class is still applied */
+      /* private mode; the class is still applied */
     }
     themeStore.listeners.forEach((l) => l());
   },
@@ -55,7 +55,7 @@ export function useMediaQuery(query: string): boolean {
   return matches;
 }
 
-/** True on devices with a real pointer — used to gate cursor and tilt effects. */
+/** True on devices with a real pointer, used to gate cursor and tilt effects. */
 export function useFinePointer(): boolean {
   return useMediaQuery('(pointer: fine)');
 }

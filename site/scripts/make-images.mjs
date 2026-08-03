@@ -1,7 +1,7 @@
 /**
  * Generates the social preview image and the apple-touch icon from SVG.
- * Run manually (`node scripts/make-images.mjs`) when the wording changes —
- * the output is committed, so the build itself needs no image toolchain.
+ * Run manually (`node scripts/make-images.mjs`) when the wording changes.
+ * The output is committed, so the build itself needs no image toolchain.
  *
  * Requires `sharp` and the site fonts installed locally:
  *   npm install --no-save sharp
@@ -68,7 +68,7 @@ const og = `
   </g>
 
   <g font-family="JetBrains Mono" font-size="15" letter-spacing="2" fill="#6C717A">
-    <text x="80" y="600">IRIS · SPLITTYY · EVENTYY · BEAUTYFLOW · STACKUP</text>
+    <text x="80" y="600">IRIS · SPLITTYY · EVENTYY · SALONYY · STACKUP</text>
     <text x="1120" y="600" text-anchor="end">dannymerhej.github.io</text>
   </g>
 </svg>`;

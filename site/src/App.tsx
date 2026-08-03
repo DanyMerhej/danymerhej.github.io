@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { About } from './components/About';
+import { Beyond } from './components/Beyond';
 import { Capabilities } from './components/Capabilities';
 import { CommandPalette } from './components/CommandPalette';
 import { Contact } from './components/Contact';
@@ -45,6 +46,7 @@ export default function App() {
         <Projects />
         <Capabilities />
         <About />
+        <Beyond />
         <Contact />
       </main>
 

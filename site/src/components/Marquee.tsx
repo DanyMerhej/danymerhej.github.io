@@ -1,6 +1,6 @@
 import { marqueeItems } from '../data/site';
 
-/** Infinite ticker — the list is rendered twice so the loop is seamless. */
+/** Infinite ticker: the list is rendered twice so the loop is seamless. */
 export function Marquee() {
   const items = [...marqueeItems, ...marqueeItems];
 

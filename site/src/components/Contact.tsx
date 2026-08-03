@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpRight, Check, Copy, Github, Linkedin, Mail, Phone } from 'lucide-react';
+import { ArrowUpRight, Check, Copy, Github, Instagram, Linkedin, Mail, Phone } from 'lucide-react';
 import { profile } from '../data/site';
 import { Reveal } from './Reveal';
 
@@ -30,7 +30,7 @@ export function Contact() {
       <div className="shell relative">
         <Reveal>
           <div className="flex items-center gap-4">
-            <span className="eyebrow">05 / Contact</span>
+            <span className="eyebrow">06 / Contact</span>
             <span className="h-px flex-1 bg-line" />
           </div>
         </Reveal>
@@ -46,8 +46,8 @@ export function Contact() {
         <Reveal delay={0.12}>
           <p className="mt-7 max-w-2xl text-base leading-relaxed text-muted text-pretty md:text-lg">
             Open to senior engineering and technical leadership roles, architecture consulting, and
-            product work where the whole thing needs building — not just a screen. Fastest way to
-            reach me is email.
+            product work where the whole thing needs building rather than just a screen. Fastest way
+            to reach me is email.
           </p>
         </Reveal>
 
@@ -65,7 +65,7 @@ export function Contact() {
           </div>
         </Reveal>
 
-        <div className="mt-16 grid gap-px overflow-hidden rounded-3xl border border-line bg-line sm:grid-cols-3">
+        <div className="mt-16 grid gap-px overflow-hidden rounded-3xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
           <ContactTile
             icon={<Linkedin className="h-4 w-4" />}
             label="LinkedIn"
@@ -81,11 +81,18 @@ export function Contact() {
             delay={0.06}
           />
           <ContactTile
+            icon={<Instagram className="h-4 w-4" />}
+            label="Instagram"
+            value={profile.instagramHandle}
+            href={profile.instagram}
+            delay={0.12}
+          />
+          <ContactTile
             icon={<Phone className="h-4 w-4" />}
             label="Phone"
             value={profile.phone}
             href={`tel:${profile.phoneHref}`}
-            delay={0.12}
+            delay={0.18}
           />
         </div>
       </div>

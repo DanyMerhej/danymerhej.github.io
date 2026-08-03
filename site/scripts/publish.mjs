@@ -26,7 +26,7 @@ async function exists(path) {
 }
 
 if (!(await exists(dist))) {
-  console.error('No build found at site/dist — run `npm run build` first.');
+  console.error('No build found at site/dist. Run `npm run build` first.');
   process.exit(1);
 }
 

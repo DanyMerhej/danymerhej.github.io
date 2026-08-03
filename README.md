@@ -1,19 +1,19 @@
 # dannymerhej.github.io
 
-Personal portfolio — experience, projects and capabilities in one place.
+Personal portfolio: experience, projects and capabilities in one place.
 Live at **https://dannymerhej.github.io**.
 
 Built from scratch: React 18 + TypeScript (strict) + Vite + Tailwind + Framer Motion.
-No template, no UI kit, no third-party requests at runtime — fonts are self-hosted.
+No template, no UI kit, no third-party requests at runtime. Fonts are self-hosted.
 
 ## How the repository is laid out
 
 ```
-/                 ← the published site (index.html, assets/, fonts/) — generated, do not edit
+/                 <- the published site (index.html, assets/, fonts/), generated, do not edit
 /site             ← the source project
   /src
     /components   one file per section + the shared widgets
-    /data/site.ts ALL the content — copy, projects, experience, links
+    /data/site.ts ALL the content: copy, projects, experience, links
     /lib/hooks.ts theme store, media queries, scroll helpers
   /public         favicon, og image, robots, sitemap, self-hosted fonts
   /scripts        publish, font fetcher, social-image generator
@@ -30,7 +30,7 @@ Almost everything visible on the page comes from a single file:
 site/src/data/site.ts
 ```
 
-Add a project, change a job description, update a link — it is all there, typed.
+Add a project, change a job description, update a link. It is all there, typed.
 Nothing else needs touching.
 
 ## Local development
@@ -71,7 +71,7 @@ node scripts/make-images.mjs           # regenerate og.png + apple-touch-icon.pn
      `185.199.110.153`, `185.199.111.153`
    - `www` → `CNAME` to `dannymerhej.github.io`
 2. Add the domain under **Settings → Pages → Custom domain** (this creates a `CNAME`
-   file in the repository root — the publish script preserves it).
+   file in the repository root, which the publish script preserves).
 3. Tick **Enforce HTTPS** once the certificate is issued.
 4. Update the absolute URLs in `site/index.html` (canonical, `og:url`, `og:image`),
    `site/public/robots.txt` and `site/public/sitemap.xml`.

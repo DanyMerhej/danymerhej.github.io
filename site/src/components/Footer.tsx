@@ -25,7 +25,7 @@ export function Footer() {
         </div>
 
         <div className="mt-12 flex flex-col gap-3 border-t border-line pt-7 text-xs text-faint sm:flex-row sm:items-center sm:justify-between">
-          <p>© {year} Danny Merhej. Built from scratch — React, TypeScript, Tailwind, Framer Motion.</p>
+          <p>© {year} Danny Merhej. Built from scratch with React, TypeScript, Tailwind and Framer Motion.</p>
           <p className="font-mono">
             Press <kbd className="rounded border border-line px-1.5 py-0.5">⌘K</kbd> to navigate
           </p>

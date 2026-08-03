@@ -56,7 +56,7 @@ export function Scramble({ phrases, interval = 3200 }: { phrases: string[]; inte
 
     raf.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf.current);
-    // `text` is intentionally excluded — including it would restart the animation on every frame.
+    // `text` is intentionally excluded; including it would restart the animation on every frame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [index, phrases, reduced]);
 

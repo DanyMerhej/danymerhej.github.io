@@ -5,7 +5,7 @@ const INTERACTIVE = 'a, button, [role="button"], input, kbd, summary';
 
 /**
  * A ring that trails the pointer and swells over anything clickable.
- * The native cursor is deliberately left visible — this is decoration, not a
+ * The native cursor is deliberately left visible, since this is decoration, not a
  * replacement for it. Desktop only; touch devices render nothing.
  */
 export function Cursor() {

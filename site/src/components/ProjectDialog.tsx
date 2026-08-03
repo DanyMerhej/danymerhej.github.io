@@ -1,8 +1,8 @@
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, Globe, Smartphone, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { Project } from '../data/site';
-import { StatusBadge } from './ProjectCard';
+import { LinkIcon, StatusBadge } from './ProjectCard';
 import { useScrollLock } from '../lib/hooks';
 
 export function ProjectDialog({ project, onClose }: { project: Project | null; onClose: () => void }) {
@@ -36,7 +36,7 @@ export function ProjectDialog({ project, onClose }: { project: Project | null; o
             tabIndex={-1}
             role="dialog"
             aria-modal="true"
-            aria-label={`${project.name} — project detail`}
+            aria-label={`${project.name}, project detail`}
             className="relative flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl
                        border border-line bg-surface outline-none sm:max-h-[86vh] sm:rounded-3xl"
             initial={{ y: 40, opacity: 0, scale: 0.985 }}
@@ -136,11 +136,7 @@ export function ProjectDialog({ project, onClose }: { project: Project | null; o
                       rel="noreferrer noopener"
                       className="btn-ghost"
                     >
-                      {l.kind === 'store' ? (
-                        <Smartphone className="h-4 w-4" />
-                      ) : (
-                        <Globe className="h-4 w-4" />
-                      )}
+                      <LinkIcon kind={l.kind} className="h-4 w-4" />
                       {l.label}
                     </a>
                   ))}

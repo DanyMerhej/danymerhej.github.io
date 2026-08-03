@@ -45,7 +45,7 @@ export function Nav({ onOpenPalette }: { onOpenPalette: () => void }) {
               <span className="flex h-7 w-7 items-center justify-center rounded-full bg-signal font-display text-[13px] font-bold text-signal-ink">
                 D
               </span>
-              <span className="hidden font-display text-sm font-semibold tracking-tight sm:block">
+              <span className="hidden font-display text-sm font-semibold tracking-tight lg:block">
                 Danny Merhej
               </span>
             </a>
@@ -55,7 +55,7 @@ export function Nav({ onOpenPalette }: { onOpenPalette: () => void }) {
                 <li key={s.id}>
                   <a
                     href={`#${s.id}`}
-                    className="relative block rounded-full px-3.5 py-1.5 text-sm text-muted transition-colors hover:text-ink"
+                    className="relative block rounded-full px-3 py-1.5 text-sm text-muted transition-colors hover:text-ink lg:px-3.5"
                   >
                     {active === s.id && (
                       <motion.span

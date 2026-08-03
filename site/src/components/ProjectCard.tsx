@@ -1,9 +1,16 @@
-import { ArrowUpRight, Globe, Smartphone } from 'lucide-react';
+import { ArrowUpRight, Globe, Instagram, Smartphone } from 'lucide-react';
 import type { PointerEvent as ReactPointerEvent } from 'react';
 import { useRef } from 'react';
-import type { Project } from '../data/site';
+import type { Project, ProjectLink } from '../data/site';
 import { statusLabel } from '../data/site';
 import { useFinePointer } from '../lib/hooks';
+
+/** Picks the glyph for a project link by its kind. */
+export function LinkIcon({ kind, className }: { kind: ProjectLink['kind']; className?: string }) {
+  if (kind === 'store') return <Smartphone className={className} />;
+  if (kind === 'social') return <Instagram className={className} />;
+  return <Globe className={className} />;
+}
 
 export function StatusBadge({ status }: { status: Project['status'] }) {
   const live = status === 'live';
@@ -140,7 +147,7 @@ export function ProjectCard({ project, featured = false, onOpen }: Props) {
               rel="noreferrer noopener"
               className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-ink"
             >
-              {l.kind === 'store' ? <Smartphone className="h-3.5 w-3.5" /> : <Globe className="h-3.5 w-3.5" />}
+              <LinkIcon kind={l.kind} className="h-3.5 w-3.5" />
               <span className="link-underline">{l.label}</span>
             </a>
           ))}

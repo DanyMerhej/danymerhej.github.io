@@ -24,7 +24,7 @@ export function Experience() {
         <SectionHeading
           index="01 / Work"
           title="Seven years, one company, intern to team lead."
-          lead="I build IRIS — an enterprise insurance ERP that more than 30 companies across the Middle East, Africa and Europe run their operations on. I lead its development and own the technical conversation with the clients using it."
+          lead="I build IRIS, an enterprise insurance ERP that more than 30 companies across the Middle East, Africa and Europe run their operations on. I lead its development and own the technical conversation with the clients using it."
         />
 
         {/* Headline numbers */}
