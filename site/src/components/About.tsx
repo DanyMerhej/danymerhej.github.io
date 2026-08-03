@@ -26,6 +26,26 @@ export function About() {
         </div>
 
         <div className="space-y-4">
+          <Reveal delay={0.04}>
+            <figure className="card overflow-hidden">
+              <img
+                src={profile.portrait}
+                alt={`${profile.name}, ${profile.title}`}
+                width={512}
+                height={512}
+                loading="lazy"
+                decoding="async"
+                className="aspect-square w-full object-cover"
+              />
+              <figcaption className="flex items-center justify-between gap-3 border-t border-line px-6 py-4">
+                <span className="font-display text-lg font-semibold tracking-tight">{profile.name}</span>
+                <span className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
+                  {profile.location}
+                </span>
+              </figcaption>
+            </figure>
+          </Reveal>
+
           <Reveal delay={0.1}>
             <InfoCard icon={<MapPin className="h-4 w-4" />} label="Based in">
               <p className="font-display text-xl font-semibold tracking-tight">{profile.location}</p>

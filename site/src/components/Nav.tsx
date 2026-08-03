@@ -1,7 +1,7 @@
 import { AnimatePresence, motion, useMotionValueEvent, useScroll } from 'framer-motion';
-import { Command, Moon, Sun } from 'lucide-react';
+import { Command, Mail, Moon, Sun } from 'lucide-react';
 import { useState } from 'react';
-import { sections } from '../data/site';
+import { profile, sections } from '../data/site';
 import { useActiveSection, useTheme } from '../lib/hooks';
 
 const IDS = sections.map((s) => s.id);
@@ -13,6 +13,8 @@ export function Nav({ onOpenPalette }: { onOpenPalette: () => void }) {
   const { scrollY } = useScroll();
 
   useMotionValueEvent(scrollY, 'change', (y) => setLifted(y > 120));
+
+  const activeLabel = sections.find((s) => s.id === active)?.label;
 
   return (
     <>
@@ -33,24 +35,35 @@ export function Nav({ onOpenPalette }: { onOpenPalette: () => void }) {
       >
         <div className="shell">
           <div
-            className={`mt-4 flex items-center justify-between rounded-full border px-3 py-2 transition-all duration-500 ${
+            className={`mt-4 flex items-center justify-between gap-3 rounded-full border py-2 pl-2 pr-2 transition-all duration-500 ${
               lifted ? 'glass border-line shadow-[0_10px_40px_-24px_rgba(0,0,0,0.8)]' : 'border-transparent'
             }`}
           >
+            {/* Identity. Below md this carries a second line, because the section
+                links are hidden there and the bar would otherwise read as empty. */}
             <a
               href="#top"
-              className="flex items-center gap-2.5 rounded-full px-2 py-1"
+              className="flex min-w-0 items-center gap-2.5 rounded-full pr-2"
               aria-label="Back to top"
             >
-              <span className="flex h-7 w-7 items-center justify-center rounded-full bg-signal font-display text-[13px] font-bold text-signal-ink">
-                D
-              </span>
-              <span className="hidden font-display text-sm font-semibold tracking-tight lg:block">
-                Danny Merhej
+              <img
+                src={profile.portrait}
+                alt=""
+                width={36}
+                height={36}
+                className="h-9 w-9 shrink-0 rounded-full object-cover ring-1 ring-line"
+              />
+              <span className="min-w-0 leading-tight">
+                <span className="block truncate font-display text-sm font-semibold tracking-tight">
+                  {profile.name}
+                </span>
+                <span className="block truncate font-mono text-[10px] uppercase tracking-[0.14em] text-faint md:hidden">
+                  {activeLabel ?? 'Senior Software Engineer'}
+                </span>
               </span>
             </a>
 
-            <ul className="hidden items-center gap-1 md:flex">
+            <ul className="hidden items-center gap-0.5 md:flex">
               {sections.map((s) => (
                 <li key={s.id}>
                   <a
@@ -70,12 +83,12 @@ export function Nav({ onOpenPalette }: { onOpenPalette: () => void }) {
               ))}
             </ul>
 
-            <div className="flex items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-1.5">
               <button
                 type="button"
                 onClick={onOpenPalette}
                 className="hidden items-center gap-2 rounded-full border border-line px-3 py-1.5
-                           text-muted transition-colors hover:border-faint hover:text-ink sm:flex"
+                           text-muted transition-colors hover:border-faint hover:text-ink lg:flex"
                 aria-label="Open command menu"
               >
                 <Command className="h-3.5 w-3.5" />
@@ -102,6 +115,17 @@ export function Nav({ onOpenPalette }: { onOpenPalette: () => void }) {
                   </motion.span>
                 </AnimatePresence>
               </button>
+
+              {/* The one action worth having permanently in reach. */}
+              <a
+                href={`mailto:${profile.email}`}
+                className="flex h-9 items-center justify-center gap-2 rounded-full bg-signal px-3 text-signal-ink
+                           transition-all duration-300 hover:brightness-110 sm:px-4"
+                aria-label="Send an email"
+              >
+                <Mail className="h-4 w-4" />
+                <span className="hidden text-sm font-medium sm:block">Get in touch</span>
+              </a>
             </div>
           </div>
         </div>
@@ -112,7 +136,7 @@ export function Nav({ onOpenPalette }: { onOpenPalette: () => void }) {
   );
 }
 
-/** A compact section switcher that only appears on small screens. */
+/** The real section navigation on small screens, where the top bar has no room. */
 function MobileBar({ active }: { active: string }) {
   return (
     <nav

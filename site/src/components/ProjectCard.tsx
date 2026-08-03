@@ -88,17 +88,22 @@ export function ProjectCard({ project, featured = false, onOpen }: Props) {
         <div className="flex items-start justify-between gap-4">
           <span
             aria-hidden="true"
-            className={`flex shrink-0 items-center justify-center rounded-2xl border border-line ${
-              featured ? 'h-14 w-14 text-2xl' : 'h-11 w-11 text-lg'
+            className={`flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border ${
+              featured ? 'h-16 w-16' : 'h-12 w-12'
             }`}
-            // The tile stays dark in both themes so the hue reads as a brand mark.
+            // The tile stays dark in both themes: most of the marks are drawn for dark.
             style={{
-              background: `linear-gradient(140deg, #14161A, #0A0B0D)`,
+              background: 'linear-gradient(140deg, #14161A, #0A0B0D)',
               borderColor: `${project.hues[0]}40`,
-              color: project.hues[0],
             }}
           >
-            {project.glyph}
+            <img
+              src={project.logo}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              className={`h-full w-full object-contain ${featured ? 'p-1.5' : 'p-1'}`}
+            />
           </span>
           <StatusBadge status={project.status} />
         </div>
@@ -147,10 +152,10 @@ export function ProjectCard({ project, featured = false, onOpen }: Props) {
               href={l.href}
               target="_blank"
               rel="noreferrer noopener"
-              className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-ink"
+              className="inline-flex min-w-0 max-w-full items-center gap-1.5 text-sm text-muted transition-colors hover:text-ink"
             >
-              <LinkIcon kind={l.kind} className="h-3.5 w-3.5" />
-              <span className="link-underline">{l.label}</span>
+              <LinkIcon kind={l.kind} className="h-3.5 w-3.5 shrink-0" />
+              <span className="link-underline truncate">{l.label}</span>
             </a>
           ))}
         </div>

@@ -23,7 +23,8 @@ export interface Project {
   links: ProjectLink[];
   /** Two hues used for the card's signature gradient. */
   hues: [string, string];
-  glyph: string;
+  /** Brand mark in public/brand, shown on the card and in the dialog. */
+  logo: string;
 }
 
 export const profile = {
@@ -46,6 +47,7 @@ export const profile = {
   github: 'https://github.com/DanyMerhej',
   instagram: 'https://instagram.com/danny_merhej',
   instagramHandle: '@danny_merhej',
+  portrait: '/brand/portrait.webp',
   intro:
     'I lead the team behind IRIS, an enterprise insurance ERP running at 30+ insurance companies across the Middle East, Africa and Europe. Outside of that, I design and ship my own products end to end: architecture, AI, backend, UI, app stores.',
   summary: [
@@ -152,7 +154,7 @@ export const projects: Project[] = [
     status: 'live',
     year: '2024 to now',
     role: 'Sole architect & engineer',
-    glyph: '÷',
+    logo: '/brand/splittyy.webp',
     hues: ['#C6F94E', '#39D0A5'],
     highlights: [
       'AI receipt scanning: Gemini extracts items, prices and totals straight from a photo, with no manual entry',
@@ -200,7 +202,7 @@ export const projects: Project[] = [
     status: 'building',
     year: '2025 to now',
     role: 'Architect & engineer',
-    glyph: '◈',
+    logo: '/brand/eventyy.webp',
     hues: ['#7C6BFF', '#4FA9FF'],
     highlights: [
       'One root object, the Event, carrying clients, suppliers, media, finance, timeline and live event-day state',
@@ -231,7 +233,7 @@ export const projects: Project[] = [
       'Cloudflare Pages',
     ],
     links: [
-      { label: 'eventyy.co', href: 'https://eventyy.co', kind: 'site' },
+      { label: 'eventyy.pages.dev', href: 'https://eventyy.pages.dev', kind: 'site' },
       { label: '@eventyy.soft', href: 'https://instagram.com/eventyy.soft', kind: 'social' },
     ],
   },
@@ -244,7 +246,7 @@ export const projects: Project[] = [
     status: 'building',
     year: '2025 to now',
     role: 'Architect & engineer',
-    glyph: '✻',
+    logo: '/brand/salonyy.webp',
     hues: ['#FF7AB6', '#FFB86B'],
     highlights: [
       'Multi-branch with 7 roles and a granular permission matrix',
@@ -284,7 +286,7 @@ export const projects: Project[] = [
     status: 'building',
     year: '2025 to now',
     role: 'Designer & engineer',
-    glyph: '▲',
+    logo: '/brand/stackup.webp',
     hues: ['#FFD166', '#FF7A45'],
     highlights: [
       '15 level-gated businesses with payback times ranging from seconds to days',
@@ -318,7 +320,7 @@ export const projects: Project[] = [
     status: 'live',
     year: '2025',
     role: 'Design & build',
-    glyph: '⬢',
+    logo: '/brand/alpha.webp',
     hues: ['#FF4D4D', '#FFB020'],
     highlights: [
       'A custom "Alpha" design layer built on Shopify Dawn 15.5 as a foundation',
@@ -341,7 +343,7 @@ export const projects: Project[] = [
     status: 'building',
     year: '2025 to now',
     role: 'Design & build, client project',
-    glyph: '◷',
+    logo: '/brand/hotw.webp',
     hues: ['#C9A227', '#8E7B3F'],
     highlights: [
       'An "Aged Patina" luxury design system built on Shopify Craft',
@@ -354,7 +356,13 @@ export const projects: Project[] = [
     engineering:
       'Selling a vintage watch is selling trust, so the product page had to carry far more than a price and a photo. Every collector-grade field, from reference and calibre through condition per component to restoration history and provenance, is a Shopify metafield the template reads and hides gracefully when empty. The merchant can list a watch with three facts or with thirty, and the page stays composed either way. Brand comes from the vendor field, so the eyebrow, the cards and the mega-menu taxonomy all stay in sync from one source.',
     stack: ['Shopify', 'Liquid', 'Craft theme', 'Metafields', 'Structured data', 'CSS', 'JavaScript'],
-    links: [],
+    links: [
+      {
+        label: 'homeofthewatches.myshopify.com',
+        href: 'https://homeofthewatches.myshopify.com',
+        kind: 'site',
+      },
+    ],
   },
 ];
 
@@ -365,7 +373,7 @@ export interface Venture {
   handle: string;
   href: string;
   body: string;
-  glyph: string;
+  logo: string;
   hues: [string, string];
 }
 
@@ -377,7 +385,7 @@ export const ventures: Venture[] = [
     kind: 'Photography',
     handle: '@lensandshot',
     href: 'https://instagram.com/lensandshot',
-    glyph: '◎',
+    logo: '/brand/lensandshot.webp',
     hues: ['#8FB8FF', '#C7D8F5'],
     body: 'Photography is the other way I look at things, and the one habit I have kept the longest. I shoot whenever I get the chance and publish the work at @lensandshot. Different craft, same instinct: frame it properly, wait for the moment, keep what earns its place.',
   },
@@ -387,7 +395,7 @@ export const ventures: Venture[] = [
     kind: 'Skincare brand',
     handle: '@ishrakati.lb',
     href: 'https://instagram.com/ishrakati.lb',
-    glyph: '✧',
+    logo: '/brand/ishrakati.webp',
     hues: ['#F2B8C6', '#E8D5B7'],
     body: 'Ishrakati is my own skincare brand. It is where the work is product, brand and audience instead of schema and deployment, and it keeps me close to the commercial side of building something: what people actually want, how you say it, and what makes them come back.',
   },
