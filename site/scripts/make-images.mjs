@@ -69,7 +69,7 @@ const og = `
 
   <g font-family="JetBrains Mono" font-size="15" letter-spacing="2" fill="#6C717A">
     <text x="80" y="600">IRIS · SPLITTYY · EVENTYY · SALONYY · STACKUP</text>
-    <text x="1120" y="600" text-anchor="end">dannymerhej.github.io</text>
+    <text x="1120" y="600" text-anchor="end">danymerhej.github.io</text>
   </g>
 </svg>`;
 
