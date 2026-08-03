@@ -202,7 +202,7 @@ export const projects: Project[] = [
     year: '2025 to now',
     role: 'Architect & engineer',
     logo: '/brand/eventyy.webp',
-    hues: ['#7C6BFF', '#4FA9FF'],
+    hues: ['#E879C9', '#6BC4FF'],
     highlights: [
       'One root object, the Event, carrying clients, suppliers, media, finance, timeline and live event-day state',
       'Handles any event type: weddings, birthdays, engagements, corporate events, memorials, whatever the coordinator runs',

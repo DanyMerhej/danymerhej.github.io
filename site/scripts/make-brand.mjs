@@ -22,11 +22,16 @@ if (!SRC) {
   process.exit(1);
 }
 
-/** [source file, output name] */
+/**
+ * [source file, output name, optional extract]
+ *
+ * `extract` is for sources whose artwork sits inside a soft glow or a
+ * non-uniform backdrop, where trim() has no uniform border to find.
+ */
 const logos = [
   ['7d417e4c-155807.jpg', 'salonyy'],
   ['7743be3b-70a3fef78b0a42deacf7585aa5824bb21_all_16270.png', 'splittyy'],
-  ['646ecdbd-157976.jpg', 'eventyy'],
+  ['911a1654-158014.png', 'eventyy', { left: 128, top: 128, width: 772, height: 772 }],
   ['1f84187e-146062.png', 'stackup'],
   ['ed846eef-70a3fef78b0a42deacf7585aa5824bb21_all_4129.png', 'alpha'],
   ['e6948f29-70a3fef78b0a42deacf7585aa5824bb21_all_16844.png', 'hotw'],
@@ -36,14 +41,22 @@ const logos = [
 
 await mkdir(out, { recursive: true });
 
-for (const [file, name] of logos) {
-  const src = sharp(resolve(SRC, file));
-  const meta = await src.metadata();
+for (const [file, name, extract] of logos) {
+  const meta = await sharp(resolve(SRC, file)).metadata();
 
-  await src
-    // Several originals ship with a lot of empty margin, which would render the
-    // mark tiny inside the card tile. Trim the uniform border first.
-    .trim({ threshold: 12 })
+  // Cropping runs as its own pass: sharp applies trim() before extract() within
+  // a single pipeline, so chaining the two fails on the extract area.
+  const input = extract
+    ? await sharp(resolve(SRC, file)).extract(extract).toBuffer()
+    : resolve(SRC, file);
+
+  const pipeline = sharp(input);
+
+  // Several originals ship with a lot of empty margin, which would render the
+  // mark tiny inside the card tile. An explicit crop already handles that.
+  if (!extract) pipeline.trim({ threshold: 12 });
+
+  await pipeline
     .resize(320, 320, {
       fit: 'contain',
       background: { r: 0, g: 0, b: 0, alpha: 0 },
@@ -51,7 +64,9 @@ for (const [file, name] of logos) {
     .webp({ quality: 90 })
     .toFile(resolve(out, `${name}.webp`));
 
-  console.log(`${name.padEnd(12)} ${meta.width}x${meta.height} alpha=${meta.hasAlpha}`);
+  console.log(
+    `${name.padEnd(12)} ${meta.width}x${meta.height} alpha=${meta.hasAlpha}${extract ? ' cropped' : ''}`,
+  );
 }
 
 // The portrait is cropped square rather than letterboxed.
