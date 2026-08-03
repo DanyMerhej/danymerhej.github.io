@@ -108,7 +108,9 @@ export function ProjectCard({ project, featured = false, onOpen }: Props) {
             <h3 className={`font-display font-semibold tracking-tight ${featured ? 'text-3xl md:text-4xl' : 'text-2xl'}`}>
               {project.name}
             </h3>
-            <span className="font-mono text-[11px] text-faint">{project.year}</span>
+            <span className="shrink-0 whitespace-nowrap font-mono text-[11px] text-faint">
+              {project.year}
+            </span>
           </div>
           <p className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.16em] text-faint">
             {project.tagline}
