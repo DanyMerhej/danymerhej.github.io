@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ArrowUpRight, Check, Copy, Github, Instagram, Linkedin, Mail, Phone } from 'lucide-react';
+import { ArrowUpRight, Check, Copy, Instagram, Linkedin, Mail, Phone } from 'lucide-react';
 import { profile } from '../data/site';
 import { Reveal } from './Reveal';
 
@@ -65,7 +65,7 @@ export function Contact() {
           </div>
         </Reveal>
 
-        <div className="mt-16 grid gap-px overflow-hidden rounded-3xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-16 grid gap-px overflow-hidden rounded-3xl border border-line bg-line sm:grid-cols-3">
           <ContactTile
             icon={<Linkedin className="h-4 w-4" />}
             label="LinkedIn"
@@ -74,25 +74,18 @@ export function Contact() {
             delay={0}
           />
           <ContactTile
-            icon={<Github className="h-4 w-4" />}
-            label="GitHub"
-            value="DanyMerhej"
-            href={profile.github}
-            delay={0.06}
-          />
-          <ContactTile
             icon={<Instagram className="h-4 w-4" />}
             label="Instagram"
             value={profile.instagramHandle}
             href={profile.instagram}
-            delay={0.12}
+            delay={0.06}
           />
           <ContactTile
             icon={<Phone className="h-4 w-4" />}
             label="Phone"
             value={profile.phone}
             href={`tel:${profile.phoneHref}`}
-            delay={0.18}
+            delay={0.12}
           />
         </div>
       </div>

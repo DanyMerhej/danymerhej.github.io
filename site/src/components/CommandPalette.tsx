@@ -3,7 +3,6 @@ import {
   ArrowUpRight,
   Compass,
   Copy,
-  Github,
   Instagram,
   Linkedin,
   Mail,
@@ -112,14 +111,6 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
         group: 'Contact',
         icon: <Linkedin className="h-4 w-4" />,
         run: open_(profile.linkedin),
-      },
-      {
-        id: 'github',
-        label: 'GitHub profile',
-        hint: 'github.com/DanyMerhej',
-        group: 'Contact',
-        icon: <Github className="h-4 w-4" />,
-        run: open_(profile.github),
       },
       {
         id: 'instagram',

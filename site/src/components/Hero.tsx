@@ -1,5 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
-import { ArrowDown, ArrowUpRight, Github, Linkedin, Mail } from 'lucide-react';
+import { ArrowDown, ArrowUpRight, Instagram, Linkedin, Mail } from 'lucide-react';
 import { BackdropField } from './BackdropField';
 import { Scramble } from './Scramble';
 import { profile } from '../data/site';
@@ -97,8 +97,8 @@ export function Hero() {
             <IconLink href={profile.linkedin} label="LinkedIn">
               <Linkedin className="h-[18px] w-[18px]" />
             </IconLink>
-            <IconLink href={profile.github} label="GitHub">
-              <Github className="h-[18px] w-[18px]" />
+            <IconLink href={profile.instagram} label="Instagram">
+              <Instagram className="h-[18px] w-[18px]" />
             </IconLink>
           </div>
         </motion.div>
