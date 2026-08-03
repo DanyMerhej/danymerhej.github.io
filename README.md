@@ -1,7 +1,7 @@
 # danymerhej.github.io
 
 Personal portfolio: experience, projects and capabilities in one place.
-Live at **https://danymerhej.github.io**.
+Live at **https://dannymerhej.com**.
 
 Built from scratch: React 18 + TypeScript (strict) + Vite + Tailwind + Framer Motion.
 No template, no UI kit, no third-party requests at runtime. Fonts are self-hosted.
@@ -64,14 +64,23 @@ npm install --no-save sharp
 node scripts/make-images.mjs           # regenerate og.png + apple-touch-icon.png
 ```
 
-## Using a custom domain
+## Custom domain
 
-1. Point the domain at GitHub Pages:
-   - apex (`example.com`) → four `A` records: `185.199.108.153`, `185.199.109.153`,
-     `185.199.110.153`, `185.199.111.153`
-   - `www` → `CNAME` to `danymerhej.github.io`
-2. Add the domain under **Settings → Pages → Custom domain** (this creates a `CNAME`
-   file in the repository root, which the publish script preserves).
-3. Tick **Enforce HTTPS** once the certificate is issued.
-4. Update the absolute URLs in `site/index.html` (canonical, `og:url`, `og:image`),
-   `site/public/robots.txt` and `site/public/sitemap.xml`.
+The site is served from **dannymerhej.com**. `site/public/CNAME` holds the domain and
+is copied to the repository root on every build, so the setting survives rebuilds
+rather than depending on the value stored in the GitHub UI.
+
+DNS at the registrar:
+
+| Type | Host | Value |
+|---|---|---|
+| A | `@` | `185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153` |
+| AAAA | `@` | `2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153` |
+| CNAME | `www` | `danymerhej.github.io.` |
+
+GitHub redirects `www` to the apex automatically, and `danymerhej.github.io` redirects
+to the domain. **Enforce HTTPS** in Settings → Pages once the certificate is issued.
+
+To move to a different domain, change `site/public/CNAME` and the absolute URLs in
+`site/index.html` (canonical, `og:url`, `og:image`), `site/public/robots.txt`,
+`site/public/sitemap.xml` and `site/scripts/make-images.mjs`.
