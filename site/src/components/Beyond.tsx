@@ -34,7 +34,7 @@ export function Beyond() {
               <div className="relative flex items-start justify-between gap-4">
                 <span
                   aria-hidden="true"
-                  className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
+                  className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
                   style={{
                     background: 'linear-gradient(140deg, #14161A, #0A0B0D)',
                     borderColor: `${v.hues[0]}40`,

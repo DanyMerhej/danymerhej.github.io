@@ -58,13 +58,13 @@ export function ProjectDialog({ project, onClose }: { project: Project | null; o
                 <div className="flex flex-wrap items-center gap-3">
                   <span
                     aria-hidden="true"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
+                    className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
                     style={{
                       background: 'linear-gradient(140deg, #14161A, #0A0B0D)',
                       borderColor: `${project.hues[0]}40`,
                     }}
                   >
-                    <img src={project.logo} alt="" className="h-full w-full object-contain p-1" />
+                    <img src={project.logo} alt="" className="h-full w-full object-contain p-1.5" />
                   </span>
                   <h2 className="font-display text-2xl font-semibold tracking-tight md:text-3xl">
                     {project.name}

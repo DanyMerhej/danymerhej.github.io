@@ -88,9 +88,8 @@ export function ProjectCard({ project, featured = false, onOpen }: Props) {
         <div className="flex items-start justify-between gap-4">
           <span
             aria-hidden="true"
-            className={`flex shrink-0 items-center justify-center overflow-hidden rounded-2xl border ${
-              featured ? 'h-16 w-16' : 'h-12 w-12'
-            }`}
+            // Same size on every card, featured or not, so the row of marks lines up.
+            className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl border"
             // The tile stays dark in both themes: most of the marks are drawn for dark.
             style={{
               background: 'linear-gradient(140deg, #14161A, #0A0B0D)',
@@ -102,7 +101,7 @@ export function ProjectCard({ project, featured = false, onOpen }: Props) {
               alt=""
               loading="lazy"
               decoding="async"
-              className={`h-full w-full object-contain ${featured ? 'p-1.5' : 'p-1'}`}
+              className="h-full w-full object-contain p-1.5"
             />
           </span>
           <StatusBadge status={project.status} />
