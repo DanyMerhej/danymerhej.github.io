@@ -6,15 +6,27 @@ Live at **https://dannymerhej.com**.
 Built from scratch: React 18 + TypeScript (strict) + Vite + Tailwind + Framer Motion.
 No template, no UI kit, no third-party requests at runtime. Fonts are self-hosted.
 
+## The idea
+
+The shell is monochrome, ink on warm paper, and every colour on the page belongs
+to a product. Each work chapter claims the page's `--hue` while it holds the
+middle of the viewport, so the header, rules, buttons and selection colour take
+on the colour of whatever you are looking at, and scrolling reads as a walk
+through six colour worlds rather than a scroll past six identical cards.
+
+Type is set like a magazine: a masthead whose two lines are sized so five
+letters and six letters end level, a contents list, chapters, and a colophon.
+
 ## How the repository is laid out
 
 ```
 /                 <- the published site (index.html, assets/, fonts/), generated, do not edit
 /site             ← the source project
   /src
-    /components   one file per section + the shared widgets
+    /components   Cover, Ledger, Works, Craft, Beyond, Colophon,
+                  plus Header, Menu, Intro, Motion, Odometer
     /data/site.ts ALL the content: copy, projects, experience, links
-    /lib/hooks.ts theme store, media queries, scroll helpers
+    /lib/hooks.ts theme store, the `--hue` stack, viewport and intro helpers
   /public         favicon, og image, robots, sitemap, self-hosted fonts
   /scripts        publish, font fetcher, social-image generator
 ```
@@ -62,7 +74,11 @@ cd site
 node scripts/fetch-fonts.mjs           # re-download the self-hosted woff2 subsets
 npm install --no-save sharp
 node scripts/make-images.mjs           # regenerate og.png + apple-touch-icon.png
+BRAND_SRC=/path/to/logos node scripts/make-brand.mjs   # normalise logos + portrait
 ```
+
+`make-images.mjs` needs the Syne display face installed locally, since it renders
+the card through SVG.
 
 ## Custom domain
 

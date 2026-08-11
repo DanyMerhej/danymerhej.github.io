@@ -3,7 +3,7 @@
  * Run manually (`node scripts/make-images.mjs`) when the wording changes.
  * The output is committed, so the build itself needs no image toolchain.
  *
- * Requires `sharp` and the site fonts installed locally:
+ * Requires `sharp` plus the site's display face installed locally:
  *   npm install --no-save sharp
  */
 import { writeFile } from 'node:fs/promises';
@@ -13,71 +13,48 @@ import sharp from 'sharp';
 
 const publicDir = resolve(dirname(fileURLToPath(import.meta.url)), '..', 'public');
 
-const INK = '#0A0B0D';
-const SIGNAL = '#C6F94E';
-const WHITE = '#F0F0EE';
-const MUTED = '#9CA0A6';
+const PAPER = '#F4F1EA';
+const INK = '#12110F';
+const INK_2 = '#5C564E';
+const INK_3 = '#928A80';
 
-const gridLines = () => {
-  let out = '';
-  for (let x = 0; x <= 1200; x += 60) {
-    out += `<line x1="${x}" y1="0" x2="${x}" y2="630" stroke="#282C33" stroke-width="1"/>`;
-  }
-  for (let y = 0; y <= 630; y += 60) {
-    out += `<line x1="0" y1="${y}" x2="1200" y2="${y}" stroke="#282C33" stroke-width="1"/>`;
-  }
-  return out;
-};
-
+/**
+ * The card repeats the cover: solid first line, outlined second, both fitted to
+ * the same measure. Sizes are tuned so five letters and six letters end level.
+ */
 const og = `
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
-  <defs>
-    <radialGradient id="glow" cx="18%" cy="8%" r="62%">
-      <stop offset="0%" stop-color="${SIGNAL}" stop-opacity="0.20"/>
-      <stop offset="45%" stop-color="#7C6BFF" stop-opacity="0.10"/>
-      <stop offset="100%" stop-color="${INK}" stop-opacity="0"/>
-    </radialGradient>
-    <linearGradient id="fade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#fff" stop-opacity="0.5"/>
-      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
-    </linearGradient>
-    <mask id="gridmask"><rect width="1200" height="630" fill="url(#fade)"/></mask>
-  </defs>
+  <rect width="1200" height="630" fill="${PAPER}"/>
 
-  <rect width="1200" height="630" fill="${INK}"/>
-  <g mask="url(#gridmask)" opacity="0.55">${gridLines()}</g>
-  <rect width="1200" height="630" fill="url(#glow)"/>
-
-  <g font-family="JetBrains Mono" font-size="17" letter-spacing="3.4" fill="${MUTED}">
-    <text x="80" y="92">DEVELOPMENT TEAM LEAD · SENIOR SOFTWARE ENGINEER</text>
+  <g font-family="JetBrains Mono" font-size="15" letter-spacing="3.2" fill="${INK_3}">
+    <text x="72" y="72">DEVELOPMENT TEAM LEAD &amp; SENIOR SOFTWARE ENGINEER</text>
+    <text x="1128" y="72" text-anchor="end">LEBANON</text>
   </g>
-  <circle cx="1112" cy="86" r="7" fill="${SIGNAL}"/>
-  <text x="1092" y="92" text-anchor="end" font-family="JetBrains Mono" font-size="17"
-        letter-spacing="2.6" fill="${MUTED}">LEBANON</text>
+  <line x1="72" y1="96" x2="1128" y2="96" stroke="#D8D1C4" stroke-width="1"/>
 
-  <g font-family="Bricolage Grotesque" font-weight="800" font-size="132" letter-spacing="-5">
-    <text x="80" y="290" fill="${WHITE}">DANNY</text>
-    <text x="80" y="410" fill="${WHITE}">MERHE<tspan fill="${SIGNAL}">J</tspan></text>
+  <g font-family="Syne" font-weight="800" letter-spacing="-6">
+    <text x="68" y="266" font-size="172" fill="${INK}">DANNY</text>
+    <text x="68" y="410" font-size="142" fill="none" stroke="${INK}" stroke-width="2">MERHEJ</text>
   </g>
 
-  <rect x="80" y="452" width="128" height="5" rx="2.5" fill="${SIGNAL}"/>
+  <line x1="72" y1="462" x2="1128" y2="462" stroke="#D8D1C4" stroke-width="1"/>
 
-  <g font-family="Inter" font-size="25" fill="${MUTED}">
-    <text x="80" y="516">Enterprise insurance platforms at 30+ insurers.</text>
-    <text x="80" y="552">Independently shipped, AI-powered products on web and mobile.</text>
+  <g font-family="Inter" font-size="25" fill="${INK_2}">
+    <text x="72" y="510">Enterprise insurance platforms at 30+ insurers.</text>
+    <text x="72" y="546">Independently shipped, AI-powered products on web and mobile.</text>
   </g>
 
-  <g font-family="JetBrains Mono" font-size="15" letter-spacing="2" fill="#6C717A">
-    <text x="80" y="600">IRIS · SPLITTYY · EVENTYY · SALONYY · STACKUP</text>
-    <text x="1120" y="600" text-anchor="end">dannymerhej.com</text>
+  <g font-family="JetBrains Mono" font-size="14" letter-spacing="2.4" fill="${INK_3}">
+    <text x="72" y="596">IRIS · SPLITTYY · EVENTYY · SALONYY · STACKUP</text>
+    <text x="1128" y="596" text-anchor="end">dannymerhej.com</text>
   </g>
 </svg>`;
 
 const icon = `
 <svg xmlns="http://www.w3.org/2000/svg" width="180" height="180" viewBox="0 0 180 180">
   <rect width="180" height="180" rx="40" fill="${INK}"/>
-  <text x="90" y="128" text-anchor="middle" font-family="Bricolage Grotesque"
-        font-weight="800" font-size="112" fill="${SIGNAL}">D</text>
+  <text x="90" y="130" text-anchor="middle" font-family="Syne"
+        font-weight="800" font-size="116" fill="${PAPER}">D</text>
 </svg>`;
 
 await writeFile(resolve(publicDir, 'og.png'), await sharp(Buffer.from(og)).png().toBuffer());

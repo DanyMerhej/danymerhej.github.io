@@ -21,7 +21,7 @@ const UA =
 const HREF =
   'https://fonts.googleapis.com/css2?' +
   [
-    'family=Bricolage+Grotesque:opsz,wght@12..96,400..800',
+    'family=Syne:wght@600..800',
     'family=Inter:wght@300..600',
     'family=Instrument+Serif:ital@0;1',
     'family=JetBrains+Mono:wght@400..500',

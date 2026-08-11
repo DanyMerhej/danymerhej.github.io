@@ -52,7 +52,7 @@ export const profile = {
   summary: [
     'Seven years ago I walked into Pixel Software Solutions as an intern. Today I lead the team that builds IRIS, an insurance ERP that more than 30 companies across three continents run their business on: policy administration, underwriting, claims, accounting, collections, reinsurance, reporting, broker portals and the integrations that tie them to the outside world.',
     'That work taught me the unglamorous half of engineering. Regulated domains, million-row tables, migrations that cannot fail, and clients who need a straight answer today. I own the technical conversation with them from the first requirement to the release note.',
-    'The other half is mine. Nights and weekends I build complete products alone: architecture, database, security model, AI pipeline, interface, CI/CD, app store listing. Splittyy is live on the web and on Google Play. Eventyy, Salonyy and StackUp are in active development. Two commercial storefronts are trading. I build them because shipping something with your own name on it is the fastest way to stay sharp.',
+    'The other half is mine. Nights and weekends I build complete products alone: architecture, database, security model, AI pipeline, interface, CI/CD, app store listing. Splittyy, Eventyy and Salonyy are live, and Splittyy is on Google Play too. StackUp is in active development, and two commercial storefronts are trading. I build them because shipping something with your own name on it is the fastest way to stay sharp.',
   ],
   languages: [
     { name: 'Arabic', level: 'Native' },
@@ -183,7 +183,7 @@ export const projects: Project[] = [
       'Cloudflare Pages',
     ],
     links: [
-      { label: 'splittyy.site', href: 'https://splittyy.site', kind: 'site' },
+      { label: 'splittyy.com', href: 'https://splittyy.com', kind: 'site' },
       {
         label: 'Google Play',
         href: 'https://play.google.com/store/apps/details?id=com.splittyy.app',
@@ -198,7 +198,7 @@ export const projects: Project[] = [
     tagline: 'Your digital event office',
     blurb:
       'A multi-tenant event operations platform that runs any type of event, from the first client meeting to the last guest leaving.',
-    status: 'building',
+    status: 'live',
     year: '2025 to now',
     role: 'Architect & engineer',
     logo: '/brand/eventyy.webp',
@@ -232,7 +232,7 @@ export const projects: Project[] = [
       'Cloudflare Pages',
     ],
     links: [
-      { label: 'eventyy.pages.dev', href: 'https://eventyy.pages.dev', kind: 'site' },
+      { label: 'eventyy.com', href: 'https://eventyy.com', kind: 'site' },
       { label: '@eventyy.soft', href: 'https://instagram.com/eventyy.soft', kind: 'social' },
     ],
   },
@@ -242,7 +242,7 @@ export const projects: Project[] = [
     tagline: 'Salon and clinic operations, done properly',
     blurb:
       'Multi-branch management for salons, spas and laser clinics: appointments, CRM, POS and real profitability.',
-    status: 'building',
+    status: 'live',
     year: '2025 to now',
     role: 'Architect & engineer',
     logo: '/brand/salonyy.webp',
@@ -527,11 +527,11 @@ export const statusLabel: Record<Status, string> = {
   early: 'Early build',
 };
 
-export const sections = [
-  { id: 'work', label: 'Work' },
-  { id: 'projects', label: 'Projects' },
-  { id: 'capabilities', label: 'Capabilities' },
-  { id: 'about', label: 'About' },
-  { id: 'beyond', label: 'Beyond' },
-  { id: 'contact', label: 'Contact' },
+/** The running order of the page, used by the contents list and the menu. */
+export const chapters = [
+  { id: 'ledger', label: 'The day job' },
+  { id: 'works', label: 'The work' },
+  { id: 'craft', label: 'What I do' },
+  { id: 'beyond', label: 'Beyond code' },
+  { id: 'colophon', label: 'About & contact' },
 ];

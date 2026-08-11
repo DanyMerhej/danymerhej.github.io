@@ -1,31 +1,29 @@
+import { AnimatePresence } from 'framer-motion';
 import { useEffect, useState } from 'react';
-import { About } from './components/About';
 import { Beyond } from './components/Beyond';
-import { Capabilities } from './components/Capabilities';
-import { CommandPalette } from './components/CommandPalette';
-import { Contact } from './components/Contact';
-import { Cursor } from './components/Cursor';
-import { Experience } from './components/Experience';
-import { Footer } from './components/Footer';
-import { Hero } from './components/Hero';
-import { Marquee } from './components/Marquee';
-import { Nav } from './components/Nav';
-import { Projects } from './components/Projects';
-import { ScrollProgress } from './components/ScrollProgress';
+import { Colophon } from './components/Colophon';
+import { Cover } from './components/Cover';
+import { Craft } from './components/Craft';
+import { Header } from './components/Header';
+import { Intro } from './components/Intro';
+import { Ledger } from './components/Ledger';
+import { Menu } from './components/Menu';
+import { Works } from './components/Works';
+import { useHueThemeSync, useIntro, useTheme } from './lib/hooks';
 
 export default function App() {
-  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [intro, endIntro] = useIntro();
+  const [theme] = useTheme();
+
+  // Keep the ink fallback correct when the palette flips between chapters.
+  useHueThemeSync(theme);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
-        setPaletteOpen((o) => !o);
-      }
-      // `/` opens search too, unless the visitor is typing in a field.
-      if (e.key === '/' && !(e.target instanceof HTMLInputElement)) {
-        e.preventDefault();
-        setPaletteOpen(true);
+        setMenuOpen((o) => !o);
       }
     };
     window.addEventListener('keydown', onKey);
@@ -34,25 +32,21 @@ export default function App() {
 
   return (
     <div className="grain relative min-h-screen">
-      <Cursor />
-      <ScrollProgress />
-      <Nav onOpenPalette={() => setPaletteOpen(true)} />
+      <AnimatePresence>{intro && <Intro key="intro" onDone={endIntro} />}</AnimatePresence>
 
-      <Hero />
+      <Header onOpenMenu={() => setMenuOpen(true)} />
 
-      <main id="main">
-        <Marquee />
-        <Experience />
-        <Projects />
-        <Capabilities />
-        <About />
+      <Cover intro={intro} />
+
+      <main>
+        <Ledger />
+        <Works />
+        <Craft />
         <Beyond />
-        <Contact />
+        <Colophon />
       </main>
 
-      <Footer />
-
-      <CommandPalette open={paletteOpen} onClose={() => setPaletteOpen(false)} />
+      <Menu open={menuOpen} onClose={() => setMenuOpen(false)} />
     </div>
   );
 }

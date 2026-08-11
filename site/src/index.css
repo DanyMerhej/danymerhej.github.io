@@ -5,80 +5,74 @@
 @tailwind utilities;
 
 @layer base {
+  /*
+   * The shell is monochrome on purpose. Every colour on the page belongs to a
+   * product, and arrives with it: `--hue` is rewritten as each work chapter
+   * scrolls into view, so the page takes on the colour of whatever you are
+   * looking at and returns to ink between chapters.
+   */
   :root {
-    --c-canvas: 10 11 13;
-    --c-surface: 17 19 23;
-    --c-raised: 24 27 32;
-    --c-ink: 240 240 238;
-    --c-muted: 156 160 166;
-    --c-faint: 108 113 122;
-    --c-line: 40 44 51;
-    /* `signal` is the brand fill; `accent` is the readable text version of it. */
-    --c-signal: 198 249 78;
-    --c-signal-ink: 10 11 13;
-    --c-accent: 198 249 78;
-    --c-violet: 124 107 255;
-    --grain-opacity: 0.038;
+    --paper: 244 241 234;
+    --paper-2: 249 247 241;
+    --ink: 18 17 15;
+    --ink-2: 92 86 78;
+    --ink-3: 146 138 128;
+    --rule: 216 209 196;
+    --hue: 18 17 15;
+    --grain: 0.03;
+    --curtain: 244 241 234;
   }
 
-  html.light {
-    --c-canvas: 245 242 234;
-    --c-surface: 252 250 245;
-    --c-raised: 255 255 255;
-    --c-ink: 22 23 26;
-    --c-muted: 88 92 99;
-    --c-faint: 132 136 143;
-    --c-line: 223 218 205;
-    /* The lime stays the brand on paper; accent text darkens for contrast. */
-    --c-signal: 173 224 60;
-    --c-signal-ink: 22 23 26;
-    --c-accent: 78 106 4;
-    --c-violet: 91 74 224;
-    --grain-opacity: 0.025;
+  html.dark {
+    --paper: 14 13 12;
+    --paper-2: 21 20 18;
+    --ink: 243 240 233;
+    --ink-2: 166 158 148;
+    --ink-3: 112 106 98;
+    --rule: 45 42 38;
+    --hue: 243 240 233;
+    --grain: 0.045;
+    --curtain: 14 13 12;
   }
 
   * {
-    @apply border-line;
+    @apply border-rule;
   }
 
   html {
     -webkit-text-size-adjust: 100%;
-    scroll-behavior: smooth;
     font-optical-sizing: auto;
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-canvas text-ink font-sans antialiased;
+    @apply bg-paper text-ink font-sans antialiased;
     overflow-x: hidden;
-    font-feature-settings: 'cv05' 1, 'ss01' 1;
+    /* Colour changes are the page's main motion; ease them, never snap. */
+    transition: background-color 0.9s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   ::selection {
-    background: rgb(var(--c-signal));
-    color: rgb(var(--c-signal-ink));
+    background: rgb(var(--hue));
+    color: rgb(var(--paper));
   }
 
   :focus-visible {
-    outline: 2px solid rgb(var(--c-accent));
-    outline-offset: 3px;
-    border-radius: 4px;
+    outline: 2px solid rgb(var(--hue));
+    outline-offset: 4px;
+    border-radius: 2px;
   }
 
-  /* Scrollbar */
   ::-webkit-scrollbar {
-    width: 10px;
-    height: 10px;
+    width: 9px;
   }
   ::-webkit-scrollbar-track {
-    background: rgb(var(--c-canvas));
+    background: rgb(var(--paper));
   }
   ::-webkit-scrollbar-thumb {
-    background: rgb(var(--c-line));
+    background: rgb(var(--rule));
     border-radius: 99px;
-    border: 3px solid rgb(var(--c-canvas));
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgb(var(--c-faint));
+    border: 2px solid rgb(var(--paper));
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -96,106 +90,130 @@
 }
 
 @layer components {
-  .shell {
-    @apply mx-auto w-full max-w-shell px-5 sm:px-8 lg:px-12;
+  /* Editorial margins: generous on desktop, edge to edge on a phone. */
+  .gutter {
+    @apply mx-auto w-full max-w-[100rem] px-5 sm:px-8 lg:px-14;
   }
 
-  .eyebrow {
-    @apply font-mono text-[11px] uppercase tracking-[0.22em] text-faint;
+  .label {
+    @apply font-mono text-[10px] uppercase tracking-[0.28em] text-ink-3;
   }
 
-  .rule {
-    @apply h-px w-full bg-line;
+  .rule-t {
+    @apply border-t border-rule;
   }
 
-  /* A hairline grid that sits behind the whole page. */
-  .grid-field {
-    background-image: linear-gradient(rgb(var(--c-line) / 0.5) 1px, transparent 1px),
-      linear-gradient(90deg, rgb(var(--c-line) / 0.5) 1px, transparent 1px);
-    background-size: 72px 72px;
-    mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 78%);
-    -webkit-mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, #000 20%, transparent 78%);
+  /* Display type. Syne is wide and architectural, so it needs negative tracking
+     at size and almost none at small sizes. */
+  .display {
+    @apply font-display font-extrabold;
+    letter-spacing: -0.035em;
+    line-height: 0.86;
   }
 
-  .glass {
-    background: rgb(var(--c-surface) / 0.72);
-    backdrop-filter: blur(14px) saturate(140%);
-    -webkit-backdrop-filter: blur(14px) saturate(140%);
+  /* The two masthead lines are set at different sizes so five letters and six
+     letters end up the same width, the way a magazine fits a masthead. The rem
+     ceilings stop them overrunning the container once the page hits max width. */
+  .cover-1 {
+    font-size: clamp(3.1rem, 15.2vw, 15.4rem);
   }
 
-  .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-medium
-           transition-all duration-300 ease-out;
+  .cover-2 {
+    font-size: clamp(2.55rem, 12.5vw, 12.7rem);
   }
 
-  .btn-primary {
-    @apply btn bg-signal text-signal-ink hover:brightness-110;
-    box-shadow: 0 0 0 0 rgb(var(--c-signal) / 0.4);
-  }
-  .btn-primary:hover {
-    box-shadow: 0 8px 34px -8px rgb(var(--c-signal) / 0.55);
-    transform: translateY(-1px);
+  .chapter-type {
+    font-size: clamp(2.3rem, 7.4vw, 6.4rem);
+    line-height: 0.9;
   }
 
-  .btn-ghost {
-    @apply btn border border-line text-ink hover:border-faint;
-  }
-  .btn-ghost:hover {
-    background: rgb(var(--c-raised) / 0.7);
-    transform: translateY(-1px);
+  .section-type {
+    font-size: clamp(2.1rem, 6.2vw, 4.75rem);
+    line-height: 0.94;
   }
 
-  .chip {
-    @apply inline-flex items-center rounded-full border border-line px-3 py-1
-           font-mono text-[11px] tracking-tight text-muted transition-colors duration-200;
-  }
-  .chip:hover {
-    @apply border-faint text-ink;
+  .lede {
+    @apply text-lg leading-relaxed text-ink-2 sm:text-xl md:text-2xl;
+    letter-spacing: -0.011em;
   }
 
-  .card {
-    @apply relative overflow-hidden rounded-3xl border border-line bg-surface;
-  }
-
-  .link-underline {
-    background-image: linear-gradient(rgb(var(--c-accent)), rgb(var(--c-accent)));
-    background-size: 0% 1px;
+  /* A link that draws its rule from the left on hover. */
+  .ul-draw {
+    background-image: linear-gradient(rgb(var(--hue)), rgb(var(--hue)));
+    background-size: 0% 1.5px;
     background-position: 0 100%;
     background-repeat: no-repeat;
-    transition: background-size 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: background-size 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .link-underline:hover {
-    background-size: 100% 1px;
+  .ul-draw:hover,
+  a:hover > .ul-draw {
+    background-size: 100% 1.5px;
   }
 
-  /* Fine film grain over the whole page, which kills banding on the big gradients. */
+  .tag {
+    @apply inline-flex items-center rounded-full border border-rule px-3 py-1 font-mono
+           text-[11px] tracking-tight text-ink-2;
+  }
+
+  /* Big tactile button. 48px minimum, so it is comfortable with a thumb. */
+  .action {
+    @apply inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-full px-6
+           text-[0.95rem] font-medium transition-all duration-500;
+    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .action-solid {
+    @apply action;
+    background: rgb(var(--ink));
+    color: rgb(var(--paper));
+  }
+  .action-solid:hover {
+    background: rgb(var(--hue));
+    color: rgb(var(--paper));
+    transform: translateY(-2px);
+  }
+  .action-line {
+    @apply action border border-rule text-ink;
+  }
+  .action-line:hover {
+    border-color: rgb(var(--hue));
+    color: rgb(var(--hue));
+    transform: translateY(-2px);
+  }
+
+  /* Paper grain. Sits above everything, ignores pointer events. */
   .grain::after {
     content: '';
     position: fixed;
     inset: -50%;
-    z-index: 9999;
+    z-index: 200;
     pointer-events: none;
-    opacity: var(--grain-opacity);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: var(--grain);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 
 @layer utilities {
-  .text-balance {
+  .balance {
     text-wrap: balance;
   }
-  .text-pretty {
+  .pretty {
     text-wrap: pretty;
   }
-  .no-scrollbar::-webkit-scrollbar {
+  .no-bar::-webkit-scrollbar {
     display: none;
   }
-  .no-scrollbar {
+  .no-bar {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  .mask-fade-x {
-    mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
+  /* Clip a moving fill to the glyphs themselves. */
+  .text-fill {
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    -webkit-text-fill-color: transparent;
+  }
+  .hue {
+    color: rgb(var(--hue));
   }
 }

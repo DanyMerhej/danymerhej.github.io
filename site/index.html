@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en" class="light">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -9,8 +9,8 @@
       content="Danny Merhej is a Development Team Lead and Senior Software Engineer with 7+ years building enterprise insurance systems (IRIS, 30+ insurers) and independently shipping full-stack, AI-powered products across web and mobile."
     />
     <meta name="author" content="Danny Merhej" />
-    <meta name="theme-color" content="#0A0B0D" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#F5F2EA" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0E0D0C" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F4F1EA" media="(prefers-color-scheme: light)" />
     <link rel="canonical" href="https://dannymerhej.com/" />
 
     <meta property="og:type" content="website" />
@@ -40,7 +40,7 @@
       rel="preload"
       as="font"
       type="font/woff2"
-      href="/fonts/bricolage-grotesque-normal-400-800-latin.woff2"
+      href="/fonts/syne-normal-600-800-latin.woff2"
       crossorigin
     />
     <link
@@ -92,12 +92,12 @@
       (function () {
         try {
           var stored = localStorage.getItem('dm-theme');
-          var prefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-          var theme = stored || (prefersLight ? 'light' : 'dark');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = stored || (prefersDark ? 'dark' : 'light');
           document.documentElement.classList.toggle('dark', theme === 'dark');
           document.documentElement.classList.toggle('light', theme !== 'dark');
         } catch (e) {
-          /* keep the dark default */
+          /* keep the light default */
         }
       })();
     </script>
