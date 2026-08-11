@@ -1,6 +1,7 @@
 import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { chapters, marqueeItems, profile } from '../data/site';
+import { FitText } from './FitText';
 import { Mask } from './Motion';
 
 /**
@@ -48,29 +49,28 @@ export function Cover({ intro }: { intro: boolean }) {
         {/* The name, at full bleed */}
         <div className="gutter mt-8 md:mt-12">
           <h1 className="display">
-            <Mask delay={begin} immediate className="cover-1 block">
-              <span className="block">DANNY</span>
+            <Mask delay={begin} immediate className="block">
+              <FitText max={250}>DANNY</FitText>
             </Mask>
 
-            <Mask delay={begin + 0.12} immediate className="cover-2 relative block">
+            <Mask delay={begin + 0.12} immediate className="relative block">
               <span className="relative block">
                 {/* Outline sits underneath */}
-                <span
+                <FitText
+                  max={250}
+                  className="text-transparent"
                   aria-hidden="true"
-                  className="block text-transparent"
-                  style={{
-                    WebkitTextStroke: '1.5px rgb(var(--ink))',
-                  }}
+                  style={{ WebkitTextStroke: '1.5px rgb(var(--ink))' }}
                 >
                   MERHEJ
-                </span>
+                </FitText>
                 {/* Solid copy, wiped in on scroll */}
                 <motion.span
                   aria-hidden="true"
                   className="absolute inset-0 block text-ink"
                   style={reduced ? undefined : { clipPath: fill }}
                 >
-                  MERHEJ
+                  <FitText max={250}>MERHEJ</FitText>
                 </motion.span>
                 <span className="sr-only">Merhej</span>
               </span>

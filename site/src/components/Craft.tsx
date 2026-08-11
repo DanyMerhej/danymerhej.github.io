@@ -46,7 +46,7 @@ export function Craft() {
                     {String(i + 1).padStart(2, '0')}
                   </span>
                   <span
-                    className={`display flex-1 text-[1.6rem] leading-tight transition-colors duration-500 md:text-[2.6rem] ${
+                    className={`display min-w-0 flex-1 text-[1.6rem] leading-tight transition-colors duration-500 md:text-[2.6rem] ${
                       shown ? 'hue' : 'group-hover:text-hue'
                     }`}
                   >

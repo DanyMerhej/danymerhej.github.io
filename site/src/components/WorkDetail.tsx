@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import type { Project } from '../data/site';
-import { useScrollLock } from '../lib/hooks';
+import { useOverlayHistory, useScrollLock } from '../lib/hooks';
 import { LinkIcon, Status } from './WorkChapter';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -15,6 +15,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
 export function WorkDetail({ project, onClose }: { project: Project | null; onClose: () => void }) {
   const panel = useRef<HTMLDivElement>(null);
   useScrollLock(Boolean(project));
+  useOverlayHistory(Boolean(project), onClose);
 
   useEffect(() => {
     if (!project) return;

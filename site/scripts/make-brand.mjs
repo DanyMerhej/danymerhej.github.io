@@ -2,16 +2,19 @@
  * Normalises the brand logos and the portrait into public/brand/.
  *
  * Sources are whatever the originals happen to be (jpg, png, webp, wildly
- * different sizes). Everything comes out as a square 320px webp with
- * transparency preserved, so the cards can treat them identically.
+ * different sizes, some on a solid panel). Everything comes out as a square
+ * 320px webp with a transparent background, so the cards can treat them
+ * identically and no logo shows a panel edge against the tile behind it.
  *
  * Run when a logo changes:
- *   npm install --no-save sharp && node scripts/make-brand.mjs
+ *   npm install --no-save sharp
+ *   BRAND_SRC=/path/to/originals node scripts/make-brand.mjs
  */
 import { mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
+import { knockout } from './knockout.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(here, '..', 'public', 'brand');
@@ -23,50 +26,60 @@ if (!SRC) {
 }
 
 /**
- * [source file, output name, optional extract]
- *
- * `extract` is for sources whose artwork sits inside a soft glow or a
- * non-uniform backdrop, where trim() has no uniform border to find.
+ * name      output file
+ * extract   crop box, for artwork sitting inside a glow that trim() cannot find
+ * knock     flood-fill the flat background away from the edges
  */
 const logos = [
-  ['7d417e4c-155807.jpg', 'salonyy'],
-  ['7743be3b-70a3fef78b0a42deacf7585aa5824bb21_all_16270.png', 'splittyy'],
-  ['911a1654-158014.png', 'eventyy', { left: 128, top: 128, width: 772, height: 772 }],
-  ['1f84187e-146062.png', 'stackup'],
-  ['ed846eef-70a3fef78b0a42deacf7585aa5824bb21_all_4129.png', 'alpha'],
-  ['e6948f29-70a3fef78b0a42deacf7585aa5824bb21_all_16844.png', 'hotw'],
-  ['597ea0b3-70a3fef78b0a42deacf7585aa5824bb21_all_11892.png', 'ishrakati'],
-  ['50f6b206-70a3fef78b0a42deacf7585aa5824bb21_all_9714.webp', 'lensandshot'],
+  { file: '7d417e4c-155807.jpg', name: 'salonyy', knock: true },
+  { file: '7743be3b-70a3fef78b0a42deacf7585aa5824bb21_all_16270.png', name: 'splittyy' },
+  {
+    file: '911a1654-158014.png',
+    name: 'eventyy',
+    extract: { left: 128, top: 128, width: 772, height: 772 },
+  },
+  { file: '1f84187e-146062.png', name: 'stackup', knock: true },
+  { file: 'ed846eef-70a3fef78b0a42deacf7585aa5824bb21_all_4129.png', name: 'alpha', knock: true },
+  { file: 'e6948f29-70a3fef78b0a42deacf7585aa5824bb21_all_16844.png', name: 'hotw', knock: true },
+  { file: '597ea0b3-70a3fef78b0a42deacf7585aa5824bb21_all_11892.png', name: 'ishrakati' },
+  {
+    file: '50f6b206-70a3fef78b0a42deacf7585aa5824bb21_all_9714.webp',
+    name: 'lensandshot',
+    knock: true,
+    // A photographic backdrop, so it needs a wider catch and a long fade.
+    knockOptions: { tolerance: 88, feather: 70 },
+  },
 ];
 
 await mkdir(out, { recursive: true });
 
-for (const [file, name, extract] of logos) {
-  const meta = await sharp(resolve(SRC, file)).metadata();
+for (const { file, name, extract, knock, knockOptions } of logos) {
+  const src = resolve(SRC, file);
+  const meta = await sharp(src).metadata();
 
   // Cropping runs as its own pass: sharp applies trim() before extract() within
   // a single pipeline, so chaining the two fails on the extract area.
-  const input = extract
-    ? await sharp(resolve(SRC, file)).extract(extract).toBuffer()
-    : resolve(SRC, file);
+  let input = extract ? await sharp(src).extract(extract).toBuffer() : src;
+
+  let note = '';
+  if (knock) {
+    const result = await knockout(input, knockOptions);
+    input = result.buffer;
+    note = ` knocked ${((result.cleared / result.total) * 100).toFixed(0)}% bg=${result.bg.join(',')}`;
+  }
 
   const pipeline = sharp(input);
 
-  // Several originals ship with a lot of empty margin, which would render the
-  // mark tiny inside the card tile. An explicit crop already handles that.
+  // Originals often carry a wide empty margin, which would render the mark tiny
+  // inside its tile. An explicit crop or a knockout already handles that.
   if (!extract) pipeline.trim({ threshold: 12 });
 
   await pipeline
-    .resize(320, 320, {
-      fit: 'contain',
-      background: { r: 0, g: 0, b: 0, alpha: 0 },
-    })
+    .resize(320, 320, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
     .webp({ quality: 90 })
     .toFile(resolve(out, `${name}.webp`));
 
-  console.log(
-    `${name.padEnd(12)} ${meta.width}x${meta.height} alpha=${meta.hasAlpha}${extract ? ' cropped' : ''}`,
-  );
+  console.log(`${name.padEnd(12)} ${meta.width}x${meta.height}${extract ? ' cropped' : ''}${note}`);
 }
 
 // The portrait is cropped square rather than letterboxed.

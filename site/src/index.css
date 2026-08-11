@@ -109,6 +109,8 @@
     @apply font-display font-extrabold;
     letter-spacing: -0.035em;
     line-height: 0.86;
+    /* Safety net for large system text: break a word rather than overflow. */
+    overflow-wrap: break-word;
   }
 
   /* The two masthead lines are set at different sizes so five letters and six

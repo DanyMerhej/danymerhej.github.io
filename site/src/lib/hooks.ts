@@ -207,6 +207,48 @@ export function useIntro(): [boolean, () => void] {
   return [playing, finish];
 }
 
+/**
+ * Makes an overlay behave like a page for the device back button.
+ *
+ * Without this, opening a project write-up changes React state only. The
+ * browser has no idea anything happened, so Android's back gesture leaves the
+ * site altogether while the overlay is still on screen. Pushing a history entry
+ * on open, and closing on popstate, makes back mean "close this" the way a
+ * visitor expects.
+ *
+ * `close` is held in a ref so an inline arrow function in the parent cannot
+ * retrigger the effect and stack up duplicate history entries.
+ */
+export function useOverlayHistory(open: boolean, close: () => void): void {
+  const closeRef = useRef(close);
+  closeRef.current = close;
+  const pushed = useRef(false);
+
+  useEffect(() => {
+    if (!open) return;
+
+    window.history.pushState({ dmOverlay: true }, '');
+    pushed.current = true;
+
+    const onPop = () => {
+      // The entry is already gone; just mirror it in state.
+      pushed.current = false;
+      closeRef.current();
+    };
+
+    window.addEventListener('popstate', onPop);
+    return () => {
+      window.removeEventListener('popstate', onPop);
+      // Closed from the UI rather than from back: drop the entry we added, so
+      // back does not have to be pressed twice to leave the page.
+      if (pushed.current) {
+        pushed.current = false;
+        window.history.back();
+      }
+    };
+  }, [open]);
+}
+
 /** Value that lags behind the source, for readouts that should feel mechanical. */
 export function useDebounced<T>(value: T, ms: number): T {
   const [held, setHeld] = useState(value);

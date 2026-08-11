@@ -39,10 +39,16 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
           lifted ? 'border-b border-rule bg-paper/80 backdrop-blur-xl' : 'border-b border-transparent'
         }`}
       >
-        <div className="gutter flex h-16 items-center justify-between gap-4">
+        {/*
+          Every fixed part of this bar is sized in px rather than rem. A phone
+          set to large system text scales rem, and at that point the wordmark
+          plus two controls no longer fit, which is how the bar ended up running
+          off the edge. Only the middle label is flexible, and it truncates.
+        */}
+        <div className="gutter flex h-16 items-center justify-between gap-3">
           <a
             href="#cover"
-            className="flex min-h-[2.75rem] min-w-0 items-center gap-3"
+            className="flex h-[44px] shrink-0 items-center gap-2.5"
             aria-label="Back to top"
           >
             <img
@@ -50,18 +56,22 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
               alt=""
               width={32}
               height={32}
-              className="h-8 w-8 shrink-0 rounded-full object-cover grayscale"
+              className="h-[32px] w-[32px] shrink-0 rounded-full object-cover grayscale"
             />
-            <span className="display min-w-0 truncate text-[0.8rem] tracking-tight sm:text-sm">
+            {/* The cover states the name at full size directly below, so on a
+                phone the avatar carries identity and the space goes to the
+                chapter readout instead. */}
+            <span className="display hidden whitespace-nowrap text-[14px] tracking-tight sm:block">
               {profile.name}
             </span>
           </a>
 
-          {/* Where you are. Present at every width, because it is the one thing
-              the bar can say that the page cannot say for itself. */}
+          {/* Where you are. The one thing the bar can say that the page cannot
+              say for itself, and now present at every width. */}
           <p
             aria-live="polite"
-            className="label hidden min-w-0 flex-1 justify-center truncate text-center sm:flex"
+            className="label min-w-0 flex-1 truncate text-center"
+            style={{ fontSize: '10px' }}
           >
             {label}
           </p>
@@ -71,7 +81,7 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
               type="button"
               onClick={toggleTheme}
               aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
-              className="flex h-11 w-11 items-center justify-center rounded-full border border-rule
+              className="flex h-[44px] w-[44px] items-center justify-center rounded-full border border-rule
                          text-ink-2 transition-colors duration-500 hover:border-hue hover:text-ink"
             >
               {theme === 'dark' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
@@ -80,15 +90,16 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
             <button
               type="button"
               onClick={onOpenMenu}
-              className="flex h-11 items-center gap-2 rounded-full border border-rule px-3.5 text-[0.8rem]
-                         transition-colors duration-500 hover:border-hue sm:gap-2.5 sm:px-4 sm:text-sm"
+              className="flex h-[44px] w-[44px] items-center justify-center rounded-full border border-rule
+                         text-[14px] transition-colors duration-500 hover:border-hue
+                         sm:w-auto sm:gap-2.5 sm:px-4"
               aria-label="Open the index"
             >
               <span className="flex flex-col gap-[3px]" aria-hidden="true">
                 <span className="block h-px w-4 bg-ink" />
                 <span className="block h-px w-4 bg-ink" />
               </span>
-              Index
+              <span className="hidden sm:inline">Index</span>
             </button>
           </div>
         </div>

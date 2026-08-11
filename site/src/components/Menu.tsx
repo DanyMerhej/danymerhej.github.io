@@ -2,7 +2,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight, Mail, X } from 'lucide-react';
 import { useEffect } from 'react';
 import { chapters, profile, projects } from '../data/site';
-import { useScrollLock } from '../lib/hooks';
+import { useOverlayHistory, useScrollLock } from '../lib/hooks';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
 
@@ -12,6 +12,7 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  */
 export function Menu({ open, onClose }: { open: boolean; onClose: () => void }) {
   useScrollLock(open);
+  useOverlayHistory(open, onClose);
 
   useEffect(() => {
     if (!open) return;
@@ -76,7 +77,7 @@ export function Menu({ open, onClose }: { open: boolean; onClose: () => void }) 
                       <span className="font-mono text-[10px] text-ink-3">
                         {String(i + 1).padStart(2, '0')}
                       </span>
-                      <span className="display text-[1.8rem] leading-tight transition-colors duration-500 group-hover:text-hue md:text-[3rem]">
+                      <span className="display min-w-0 text-[1.8rem] leading-tight transition-colors duration-500 group-hover:text-hue md:text-[3rem]">
                         {c.label}
                       </span>
                     </button>

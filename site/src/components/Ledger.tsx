@@ -90,7 +90,7 @@ function Row({ role, defaultOpen }: { role: (typeof experience)[number]; default
 
         <span className="min-w-0 flex-1">
           <span className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-            <span className="display text-2xl leading-tight transition-colors duration-500 group-hover:text-hue md:text-[2.1rem]">
+            <span className="display min-w-0 text-2xl leading-tight transition-colors duration-500 group-hover:text-hue md:text-[2.1rem]">
               {role.title}
             </span>
             {role.current && <span className="label hue">Now</span>}
