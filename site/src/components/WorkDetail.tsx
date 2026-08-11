@@ -93,7 +93,7 @@ export function WorkDetail({ project, onClose }: { project: Project | null; onCl
 
             <p className="lede pretty mt-8 max-w-3xl text-ink">{project.blurb}</p>
 
-            <div className="mt-14 grid gap-12 md:grid-cols-12 md:gap-14">
+            <div className="mt-14 grid grid-cols-1 gap-12 md:grid-cols-12 md:gap-14">
               <section className="md:col-span-6">
                 <h3 className="label border-b border-rule pb-3">What it does</h3>
                 <ul className="mt-6 space-y-4">

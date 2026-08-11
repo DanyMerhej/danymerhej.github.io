@@ -80,7 +80,7 @@ export function Cover({ intro }: { intro: boolean }) {
 
         {/* Foot: portrait, standfirst, contents */}
         <div className="gutter mt-10 md:mt-16">
-          <div className="grid gap-8 border-t border-rule pt-8 md:grid-cols-12 md:gap-10">
+          <div className="grid grid-cols-1 gap-8 border-t border-rule pt-8 md:grid-cols-12 md:gap-10">
             <motion.figure
               className="order-2 md:order-1 md:col-span-3"
               initial={{ opacity: 0, y: 24 }}

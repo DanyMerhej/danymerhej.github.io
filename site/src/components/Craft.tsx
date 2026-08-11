@@ -60,7 +60,7 @@ export function Craft() {
                   transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
-                  <div className="grid gap-6 pb-8 md:grid-cols-12 md:gap-10 md:pb-10 md:pl-[3.4rem]">
+                  <div className="grid grid-cols-1 gap-6 pb-8 md:grid-cols-12 md:gap-10 md:pb-10 md:pl-[3.4rem]">
                     <p className="text-[0.95rem] leading-relaxed text-ink-2 pretty md:col-span-6 md:text-base">
                       {c.body}
                     </p>

@@ -74,7 +74,7 @@ export function WorkChapter({
       />
 
       <div className="gutter relative">
-        <div className="grid items-center gap-10 md:grid-cols-12 md:gap-12">
+        <div className="grid grid-cols-1 items-center gap-10 md:grid-cols-12 md:gap-12">
           {/* Mark */}
           <motion.div
             className="order-1 md:order-2 md:col-span-5 md:col-start-8"

@@ -57,7 +57,7 @@ export function Menu({ open, onClose }: { open: boolean; onClose: () => void }) 
             </button>
           </div>
 
-          <div className="gutter grid flex-1 gap-10 pb-16 pt-6 md:grid-cols-12 md:gap-12 md:pt-10">
+          <div className="gutter grid flex-1 grid-cols-1 gap-10 pb-16 pt-6 md:grid-cols-12 md:gap-12 md:pt-10">
             {/* Chapters */}
             <nav className="md:col-span-7">
               <ul>

@@ -47,7 +47,7 @@ function Spread({ venture, index }: { venture: Venture; index: number }) {
         href={venture.href}
         target="_blank"
         rel="noreferrer noopener"
-        className="group grid items-center gap-8 border-t border-rule pt-10 md:grid-cols-12 md:gap-12"
+        className="group grid grid-cols-1 items-center gap-8 border-t border-rule pt-10 md:grid-cols-12 md:gap-12"
       >
         <motion.div
           className={`md:col-span-4 ${flipped ? 'md:order-2 md:col-start-9' : ''}`}

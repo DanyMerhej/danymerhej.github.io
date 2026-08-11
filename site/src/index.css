@@ -125,7 +125,7 @@
   }
 
   .chapter-type {
-    font-size: clamp(2.3rem, 7.4vw, 6.4rem);
+    font-size: clamp(1.95rem, 7.4vw, 6.4rem);
     line-height: 0.9;
   }
 

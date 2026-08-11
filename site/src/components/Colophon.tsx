@@ -35,7 +35,7 @@ export function Colophon() {
           </p>
         </blockquote>
 
-        <div className="mt-16 grid gap-10 md:mt-24 md:grid-cols-12 md:gap-12">
+        <div className="mt-16 grid grid-cols-1 gap-10 md:mt-24 md:grid-cols-12 md:gap-12">
           <div className="md:col-span-7">
             <div className="space-y-6">
               {profile.summary.map((p, i) => (
