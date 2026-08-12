@@ -32,7 +32,13 @@
     />
     <meta name="twitter:image" content="https://dannymerhej.com/og.png" />
 
+    <!-- The .ico first: it is what browsers and Google's favicon crawler fetch from the
+         site root whether or not they read these tags. It holds 16, 32 and 48; Google
+         asks for a multiple of 48, hence favicon-96. The SVG is for the tab on browsers
+         that take it, and stays crisp at any zoom. -->
+    <link rel="icon" href="/favicon.ico" sizes="32x32" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96.png" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
 
     <!-- Fonts are self-hosted (see site/scripts/fetch-fonts.mjs), so no third-party request. -->
