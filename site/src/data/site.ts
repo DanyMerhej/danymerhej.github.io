@@ -189,7 +189,7 @@ export const projects: Project[] = [
         href: 'https://play.google.com/store/apps/details?id=com.splittyy.app',
         kind: 'store',
       },
-      { label: '@splittyy.site', href: 'https://instagram.com/splittyy.site', kind: 'social' },
+      { label: '@splittyyapp', href: 'https://instagram.com/splittyyapp', kind: 'social' },
     ],
   },
   {
@@ -233,7 +233,7 @@ export const projects: Project[] = [
     ],
     links: [
       { label: 'eventyy.com', href: 'https://eventyy.com', kind: 'site' },
-      { label: '@eventyy.soft', href: 'https://instagram.com/eventyy.soft', kind: 'social' },
+      { label: '@eventyyapp', href: 'https://instagram.com/eventyyapp', kind: 'social' },
     ],
   },
   {
@@ -274,7 +274,10 @@ export const projects: Project[] = [
       'Capacitor',
       'Playwright',
     ],
-    links: [{ label: 'salonyy.site', href: 'https://salonyy.site', kind: 'site' }],
+    links: [
+      { label: 'salonyy.site', href: 'https://salonyy.site', kind: 'site' },
+      { label: '@trysalonyy', href: 'https://instagram.com/trysalonyy', kind: 'social' },
+    ],
   },
   {
     id: 'stackup',
