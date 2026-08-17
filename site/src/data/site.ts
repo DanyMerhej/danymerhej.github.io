@@ -360,8 +360,8 @@ export const projects: Project[] = [
     stack: ['Shopify', 'Liquid', 'Craft theme', 'Metafields', 'Structured data', 'CSS', 'JavaScript'],
     links: [
       {
-        label: 'homeofthewatches.myshopify.com',
-        href: 'https://homeofthewatches.myshopify.com',
+        label: 'homeofthewatches.com',
+        href: 'https://homeofthewatches.com',
         kind: 'site',
       },
     ],
