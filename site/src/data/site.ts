@@ -387,7 +387,7 @@ export const projects: Project[] = [
       'Only the client\'s own photographs, several of them frames lifted from his event videos',
     ],
     engineering:
-      "The brief arrived with hard rules: no prices anywhere, no cart or checkout language, one phone number, and not a single em dash. Rules that live in a document get broken by the third edit, so these live in a check script that fails the build on a currency amount, a buy word, a stray em dash, a missing alt attribute, a third-party host, or a WhatsApp link pointing anywhere but the client's number. The site itself is deliberately unfashionable: no framework, no server, no build step in CI. A Python pass turns the client's originals into responsive WebP, writes the page from that one file of copy, and the output is committed, so deploying is a file copy that cannot fail on a dependency.",
+      "The brief arrived with hard rules: no prices anywhere, no cart or checkout language, and one phone number that every enquiry has to reach. Rules that live in a document get broken by the third edit, so these live in a check script that fails the build on a currency amount, a buy word, a missing alt attribute, a third-party host, or a WhatsApp link pointing anywhere but the client's number. The site itself is deliberately unfashionable: no framework, no server, no build step in CI. A Python pass turns the client's originals into responsive WebP, writes the page from that one file of copy, and the output is committed, so deploying is a file copy that cannot fail on a dependency.",
     stack: [
       'HTML',
       'CSS',
