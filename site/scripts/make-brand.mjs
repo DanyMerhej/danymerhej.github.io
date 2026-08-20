@@ -15,6 +15,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
 import { knockout } from './knockout.mjs';
+import { reverse } from './reverse.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const out = resolve(here, '..', 'public', 'brand');
@@ -29,6 +30,7 @@ if (!SRC) {
  * name      output file
  * extract   crop box, for artwork sitting inside a glow that trim() cannot find
  * knock     flood-fill the flat background away from the edges
+ * reverse   recolour dark line art to ivory, for a mark drawn for a light page
  */
 const logos = [
   { file: '7d417e4c-155807.jpg', name: 'salonyy', knock: true },
@@ -42,6 +44,9 @@ const logos = [
   { file: 'ed846eef-70a3fef78b0a42deacf7585aa5824bb21_all_4129.png', name: 'alpha', knock: true },
   { file: 'e6948f29-70a3fef78b0a42deacf7585aa5824bb21_all_16844.png', name: 'hotw', knock: true },
   { file: '597ea0b3-70a3fef78b0a42deacf7585aa5824bb21_all_11892.png', name: 'ishrakati' },
+  // public/img/brand/logo.png from the BitsEvents repository. Black line art on
+  // an ivory page, so it is reversed out to sit on the card's dark tile.
+  { file: 'bits-logo.png', name: 'bits', reverse: true },
   {
     file: '50f6b206-70a3fef78b0a42deacf7585aa5824bb21_all_9714.webp',
     name: 'lensandshot',
@@ -53,7 +58,7 @@ const logos = [
 
 await mkdir(out, { recursive: true });
 
-for (const { file, name, extract, knock, knockOptions } of logos) {
+for (const { file, name, extract, knock, knockOptions, reverse: rev } of logos) {
   const src = resolve(SRC, file);
   const meta = await sharp(src).metadata();
 
@@ -66,6 +71,11 @@ for (const { file, name, extract, knock, knockOptions } of logos) {
     const result = await knockout(input, knockOptions);
     input = result.buffer;
     note = ` knocked ${((result.cleared / result.total) * 100).toFixed(0)}% bg=${result.bg.join(',')}`;
+  }
+
+  if (rev) {
+    input = await reverse(input);
+    note += ' reversed';
   }
 
   const pipeline = sharp(input);

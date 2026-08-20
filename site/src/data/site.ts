@@ -366,6 +366,43 @@ export const projects: Project[] = [
       },
     ],
   },
+  {
+    id: 'bits',
+    name: 'BITS Events',
+    tagline: 'A catalogue that ends in a message',
+    blurb:
+      'A single page for an event entertainment business in Lebanon, built so a visitor pictures their own evening and then reaches for WhatsApp.',
+    status: 'live',
+    year: '2026',
+    role: 'Design & build, client project',
+    logo: '/brand/bits.webp',
+    hues: ['#C2984E', '#EBDCC0'],
+    highlights: [
+      'One scrolling journey through five worlds: photography, stations, games, entertainment and the small details',
+      'Every word on the site, and which photograph belongs to which experience, lives in one JSON file',
+      'A Python pipeline rendering WebP at four widths per photograph, each with a blurred placeholder inlined so nothing pops in',
+      '27 WhatsApp links, each prefilled with the experience the visitor was reading about',
+      'A 48 photograph gallery in a tilted editorial masonry, with a keyboard and swipe lightbox',
+      'Zero third-party requests: self-hosted subset fonts, no analytics, no embeds, no CDN',
+      'Only the client\'s own photographs, several of them frames lifted from his event videos',
+    ],
+    engineering:
+      "The brief arrived with hard rules: no prices anywhere, no cart or checkout language, one phone number, and not a single em dash. Rules that live in a document get broken by the third edit, so these live in a check script that fails the build on a currency amount, a buy word, a stray em dash, a missing alt attribute, a third-party host, or a WhatsApp link pointing anywhere but the client's number. The site itself is deliberately unfashionable: no framework, no server, no build step in CI. A Python pass turns the client's originals into responsive WebP, writes the page from that one file of copy, and the output is committed, so deploying is a file copy that cannot fail on a dependency.",
+    stack: [
+      'HTML',
+      'CSS',
+      'JavaScript',
+      'Python',
+      'Pillow',
+      'WebP',
+      'Structured data',
+      'Cloudflare Pages',
+    ],
+    links: [
+      { label: 'bitsevents.net', href: 'https://bitsevents.net', kind: 'site' },
+      { label: '@bits_events.lb', href: 'https://instagram.com/bits_events.lb', kind: 'social' },
+    ],
+  },
 ];
 
 export interface Venture {
