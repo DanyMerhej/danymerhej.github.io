@@ -24,7 +24,7 @@ export function Craft() {
           <span className="block hue">sharpening each other.</span>
         </Mask>
         <p className="lede pretty mt-8 max-w-2xl">
-          <Words text="Enterprise systems that must not break, and independent products that must ship." />
+          <Words text="Enterprise systems that must not break, and independent products that must ship. And, off the screen entirely, houses wired to do what they are told." />
         </p>
 
         <ul className="mt-16 md:mt-24">

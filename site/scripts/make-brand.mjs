@@ -47,6 +47,10 @@ const logos = [
   // public/img/brand/logo.png from the BitsEvents repository. Black line art on
   // an ivory page, so it is reversed out to sit on the card's dark tile.
   { file: 'bits-logo.png', name: 'bits', reverse: true },
+  // public/icon-512.png from the Rentyy repository. Already the app icon: a flat
+  // orange tile with the mark knocked out of it, so it needs neither knockout nor
+  // reversing.
+  { file: 'rentyy-icon.png', name: 'rentyy' },
   {
     file: '50f6b206-70a3fef78b0a42deacf7585aa5824bb21_all_9714.webp',
     name: 'lensandshot',

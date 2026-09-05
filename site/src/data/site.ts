@@ -52,7 +52,8 @@ export const profile = {
   summary: [
     'Seven years ago I walked into Pixel Software Solutions as an intern. Today I lead the team that builds IRIS, an insurance ERP that more than 30 companies across three continents run their business on: policy administration, underwriting, claims, accounting, collections, reinsurance, reporting, broker portals and the integrations that tie them to the outside world.',
     'That work taught me the unglamorous half of engineering. Regulated domains, million-row tables, migrations that cannot fail, and clients who need a straight answer today. I own the technical conversation with them from the first requirement to the release note.',
-    'The other half is mine. Nights and weekends I build complete products alone: architecture, database, security model, AI pipeline, interface, CI/CD, app store listing. Splittyy, Eventyy and Salonyy are live, and Splittyy is on Google Play too. StackUp is in active development, and two commercial storefronts are trading. I build them because shipping something with your own name on it is the fastest way to stay sharp.',
+    'The other half is mine. Nights and weekends I build complete products alone: architecture, database, security model, AI pipeline, interface, CI/CD, app store listing. Splittyy, Eventyy, Salonyy and Rentyy are live, and Splittyy is on Google Play too. StackUp is in active development, and two commercial storefronts are trading. I build them because shipping something with your own name on it is the fastest way to stay sharp.',
+    'Not all of it is software. I also do home automation: Sonoff and Zigbee mesh networks, a hub that runs locally, and lighting, climate, access and sensors that keep working when the internet does not. It is the same job as the rest of it. Decide what the system should do when nobody is watching, then make it do that every time.',
   ],
   languages: [
     { name: 'Arabic', level: 'Native' },
@@ -277,6 +278,52 @@ export const projects: Project[] = [
     links: [
       { label: 'salonyy.site', href: 'https://salonyy.site', kind: 'site' },
       { label: '@trysalonyy', href: 'https://instagram.com/trysalonyy', kind: 'social' },
+    ],
+  },
+  {
+    id: 'rentyy',
+    name: 'Rentyy',
+    tagline: 'The rental office in your pocket',
+    blurb:
+      'A multi-tenant rental operations platform for car rental companies: the fleet, the dates, the handover, the contract, the servicing and the money.',
+    status: 'live',
+    year: '2026 to now',
+    role: 'Architect & engineer',
+    logo: '/brand/rentyy.webp',
+    hues: ['#E8562A', '#F0A868'],
+    highlights: [
+      'The fleet with its photos, papers and rate plans, where registration, insurance and inspection expiry watch themselves',
+      'A timeline board of the whole fleet: what is out, what is back today, and where the gaps are',
+      'Pricing as a list of periods rather than three fixed columns, with a quote engine that picks the cheapest legal combination and shows its reasoning',
+      'Handover and return wizards: photos, odometer, fuel and damage pinned onto a diagram of the car, resumable if the phone rings halfway through',
+      'A return that diffs itself against the handover: kilometres driven, fuel used, and every mark that was not there before',
+      "Contracts printed from a template, or overlaid onto the company's own preprinted paper so only the values land in the boxes",
+      'Servicing due by date or by odometer, and traffic fines that attach themselves to whoever had the keys that minute',
+      'A white-labelled public page where a stranger browses the fleet for their dates with no account at all',
+    ],
+    engineering:
+      "A rental office argues about two things: who had the car on those dates, and what it looked like when it left. Both are settled below the interface. Overlapping rentals are impossible at the database, a GiST exclusion constraint over the vehicle and the date range rather than a screen that checks first, because two agents quoting the same car for the same week is an ordinary Tuesday. Condition is captured as damage markers in normalised coordinates on a car diagram, so a mark lands in the same place on a phone and on a printed report, and every handover carries the last known condition forward instead of redrawing the car from nothing. Tenancy is RLS with a lesson attached: a policy declared for all also covers SELECT in Postgres, so gating only the membership helper had left every table readable through its own write policy. The isolation suite caught that, and a test pins it now. Nothing about the first client's business is in the code either. Currency, VAT, rate periods, deposits, fuel policy, contract wording and branding are rows, so a change of mind after a meeting is a settings screen rather than a migration.",
+    stack: [
+      'React 18',
+      'TypeScript (strict)',
+      'Vite',
+      'Tailwind',
+      'TanStack Query',
+      'Zustand',
+      'react-hook-form + zod',
+      'Supabase',
+      'Postgres RLS',
+      'pgTAP',
+      'Edge Functions',
+      'Capacitor',
+      'PWA',
+      'Playwright',
+      'Cloudflare Pages',
+      'GitHub Actions',
+    ],
+    links: [
+      { label: 'rentyy.net', href: 'https://rentyy.net', kind: 'site' },
+      { label: '@rentyyapp', href: 'https://instagram.com/rentyyapp', kind: 'social' },
     ],
   },
   {
@@ -509,6 +556,18 @@ export const capabilities: Capability[] = [
     ],
   },
   {
+    title: 'Home & building automation',
+    glyph: '⌂',
+    body:
+      'The same instinct pointed at a building instead of a browser. A Zigbee mesh, a hub that keeps thinking with the internet unplugged, and a house that responds to state rather than waiting for somebody to open an app.',
+    points: [
+      'Sonoff & Zigbee mesh networks',
+      'Local-first hubs, no cloud dependency',
+      'Lighting, climate, access & sensors',
+      'Scenes, schedules & presence automation',
+    ],
+  },
+  {
     title: 'Leading delivery',
     glyph: '⌗',
     body:
@@ -532,6 +591,10 @@ export const toolkit: { group: string; items: string[] }[] = [
   { group: 'Backend & data', items: ['SQL Server', 'PostgreSQL', 'Supabase', 'Edge Functions', 'pgvector', 'RLS'] },
   { group: 'AI', items: ['Google Gemini', 'AI integrations', 'Prompt engineering', 'AI-assisted development'] },
   { group: 'Cloud & CI', items: ['Google Cloud', 'Cloudflare Pages', 'GitHub Actions', 'EAS Build'] },
+  {
+    group: 'Home automation',
+    items: ['Zigbee', 'Sonoff', 'Zigbee2MQTT', 'Home Assistant', 'MQTT', 'Smart switches & sensors'],
+  },
   { group: 'Reporting', items: ['Crystal Reports', 'ComponentOne', 'DevExpress'] },
   { group: 'Tools', items: ['Visual Studio', 'SSMS', 'Git', 'GitHub', 'Jira', 'Postman', 'Swagger'] },
   {
@@ -558,6 +621,8 @@ export const marqueeItems = [
   'GitHub Actions',
   'REST APIs',
   'Shopify',
+  'Zigbee',
+  'Home Assistant',
   'Solution Architecture',
 ];
 
