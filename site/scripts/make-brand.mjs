@@ -51,6 +51,20 @@ const logos = [
   // orange tile with the mark knocked out of it, so it needs neither knockout nor
   // reversing.
   { file: 'rentyy-icon.png', name: 'rentyy' },
+  // files/elastick-favicon.png from the E-Lastick store: a navy E under an orange
+  // tick, on transparency. The navy would vanish on the dark tile, so it is
+  // reversed out like the BITS mark. Its chroma sits near 90 and the orange's
+  // near 215, with nothing in between, so a threshold of 128 turns the E ivory
+  // and leaves the tick exactly as drawn.
+  {
+    file: 'elastick-favicon.png',
+    name: 'elastick',
+    reverse: true,
+    reverseOptions: { saturation: 128 },
+  },
+  // files/flow-logo-wordmark.png from the Flow Clothing store. A black wordmark
+  // on a white panel, so the panel is knocked out and the letters reversed.
+  { file: 'flow-logo-wordmark.png', name: 'flow', knock: true, reverse: true },
   {
     file: '50f6b206-70a3fef78b0a42deacf7585aa5824bb21_all_9714.webp',
     name: 'lensandshot',
@@ -62,7 +76,7 @@ const logos = [
 
 await mkdir(out, { recursive: true });
 
-for (const { file, name, extract, knock, knockOptions, reverse: rev } of logos) {
+for (const { file, name, extract, knock, knockOptions, reverse: rev, reverseOptions } of logos) {
   const src = resolve(SRC, file);
   const meta = await sharp(src).metadata();
 
@@ -78,7 +92,7 @@ for (const { file, name, extract, knock, knockOptions, reverse: rev } of logos) 
   }
 
   if (rev) {
-    input = await reverse(input);
+    input = await reverse(input, reverseOptions);
     note += ' reversed';
   }
 

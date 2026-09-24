@@ -414,6 +414,67 @@ export const projects: Project[] = [
     ],
   },
   {
+    id: 'elastick',
+    name: 'E-Lastick',
+    tagline: 'Smart gear, tested before it ships',
+    blurb:
+      'A storefront for a gadget retailer in Lebanon: tech for the phone, the car and the home, tested before it is listed and delivered anywhere in the country.',
+    status: 'building',
+    year: '2026 to now',
+    role: 'Design & build, client project',
+    logo: '/brand/elastick.webp',
+    hues: ['#F4721D', '#193B74'],
+    highlights: [
+      "A bespoke design layer over Shopify Horizon, in the brand's navy and orange",
+      'Shopping by category, the way people actually shop: tech and gadgets, home essentials, kitchen and toys',
+      'A statement whose words light up in turn as it scrolls into view, and that stays readable if the script never runs',
+      'A header that settles into a solid bar once the page moves, with a hairline tracking how far down you are',
+      'Dark sections found at runtime and given a quiet texture, even after the merchant recolours one in the editor',
+      'Delivery and returns promised in the announcement bar, on the home page and again beside Add to cart',
+      'A cart count that pops when it changes, so adding something registers even with the drawer closed',
+    ],
+    engineering:
+      "Shopify's Horizon theme does not sit still. It swaps section markup on filtering, on pagination and live in the theme editor, and on a desktop the page scrolls inside a wrapper rather than the window, so a motion layer written the obvious way breaks in every one of those places. This one is written defensively instead. Nothing starts hidden: the statement's words are fully readable in the markup and only dim once an observer exists that is guaranteed to light them again, anything on screen at first paint appears at once with no fade, and a failsafe shows whatever is still hidden while it sits in view. A single frame-throttled handler drives the header state, the progress hairline and the hero parallax through two custom properties and one attribute, and it listens in the capture phase but only to the page's own scroller, so a product carousel can never move the progress bar. A tone pass reads the background colour Horizon actually computed for each section and textures only the dark ones, then runs again whenever the merchant recolours a section in the editor, so the design survives a client changing their mind.",
+    stack: ['Shopify', 'Liquid', 'Horizon 4.1', 'CSS', 'JavaScript'],
+    links: [
+      {
+        label: 'elastickstore.myshopify.com',
+        href: 'https://elastickstore.myshopify.com',
+        kind: 'site',
+      },
+    ],
+  },
+  {
+    id: 'flow',
+    name: 'Flow Clothing',
+    tagline: 'Quiet fronts, statement backs',
+    blurb:
+      'A storefront for an independent streetwear label: oversized graphic tees and matching sets, cut unisex, with the story printed on the back.',
+    status: 'building',
+    year: '2026 to now',
+    role: 'Design & build, client project',
+    logo: '/brand/flow.webp',
+    hues: ['#1B2FE0', '#FF5A1F'],
+    highlights: [
+      "The label's electric blue carried through the colour schemes, with buttons that turn orange under the cursor",
+      'Two lines, graphic tees and matching sets of tee and shorts, with unisex sizing from XXS to 3XL',
+      'Collections that cut across both lines: T-Shirts, Matching Sets, All Black and a Summer Capsule',
+      'A hero with separate desktop and mobile crops, so the banner is composed for each screen rather than cropped by chance',
+      "A ticker running the sets' mantras: No Rush, Less Noise More Life, Stay Quiet Move Sharp",
+      'Product pages that describe the back as carefully as the front, since that is where the print lives',
+    ],
+    engineering:
+      "A label this size does not need a custom theme so much as a disciplined one. The home page is assembled entirely from Horizon's own sections and blocks, configured rather than rewritten: a hero with its two crops, a ticker, product rails, a collection grid and the brand story. The identity lives in the colour schemes and in the catalogue itself, tagged by colour, cut, mood and print, and sliced into collections that cross both lines. Staying inside the theme's building blocks keeps the store in the owner's hands: a new banner, a reordered home page or a collection pushed to the front is a job for the theme editor rather than for a developer.",
+    stack: ['Shopify', 'Horizon 3.5', 'Theme editor', 'Colour schemes', 'Collections', 'Product tags'],
+    links: [
+      {
+        label: 'zqbmay-5c.myshopify.com',
+        href: 'https://zqbmay-5c.myshopify.com',
+        kind: 'site',
+      },
+    ],
+  },
+  {
     id: 'bits',
     name: 'BITS Events',
     tagline: 'A catalogue that ends in a message',
