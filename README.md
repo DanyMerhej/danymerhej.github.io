@@ -3,32 +3,58 @@
 Personal portfolio: experience, projects and capabilities in one place.
 Live at **https://dannymerhej.com**.
 
-Built from scratch: React 18 + TypeScript (strict) + Vite + Tailwind + Framer Motion.
+Built from scratch: React 18 + TypeScript (strict) + Vite + Tailwind + Framer Motion, with
+Matter.js for the toy box, Lenis for smooth wheel scrolling and a hand-written WebGL shader.
 No template, no UI kit, no third-party requests at runtime. Fonts are self-hosted.
 
 ## The idea
 
-The shell is monochrome, ink on warm paper, and every colour on the page belongs
-to a product. Each work chapter claims the page's `--hue` while it holds the
-middle of the viewport, so the header, rules, buttons and selection colour take
-on the colour of whatever you are looking at, and scrolling reads as a walk
-through a row of colour worlds rather than a scroll past identical cards.
+Mobile first, and in colour. The page has no fixed palette: every section, and every
+product, paints the whole page in its own **colour world** (background, ink and accent)
+while it holds the middle of the screen, and the change is a cross-fade because the
+three values are registered CSS custom properties. On a phone the browser toolbar follows
+along. `src/lib/world.ts` holds the mechanism, `worlds` in `site.ts` the palettes.
 
-Type is set like a magazine: a masthead whose two lines are sized so five
-letters and six letters end level, a contents list, chapters, and a colophon.
+The products I own come first and get the most room:
+
+- **Hero**: a domain-warped WebGL gradient in the products' colours, seen at full strength
+  only through the letters of the name (a multiply knockout). The letters breathe through the
+  typeface's weight and width axes, swell toward a finger or cursor, and scatter on scroll.
+- **Toy box**: every project's mark as a physics object. Grab, throw, shake, or tilt the
+  phone. A tap opens the project.
+- **Product worlds**: one full-colour screen per product, with the real app on a phone
+  that tilts up as you scroll and turns over into a playable toy of the same idea
+  (`src/components/demos`): split a receipt, switch an event to Arabic, drag bookings,
+  mark a hire car, run an idle empire.
+- **Client builds**: the section pins and scrolling walks sideways along the row, the page
+  taking each brand's colours as its card reaches the middle.
+- **Day job, skills, beyond code, about, contact**: IRIS's modules in orbit, role cards
+  that stack, swipeable capability cards, a toolkit in tabs, a floor plan whose lights you
+  can switch (and which keeps working with the internet "unplugged"), and a quote that
+  lights word by word as you read.
+
+Every project also has its own page at `/work/<id>/`, opened through a curtain of its colour
+that grows from where you tapped. The build writes a real HTML file for each, with the
+project's own title and preview card, so a shared link previews properly.
+
+Type: Bricolage Grotesque (display, variable), DM Sans (text), Instrument Serif (italic
+accents). Everything respects `prefers-reduced-motion`: the shader stands still, the toy box
+becomes a grid and the sideways section becomes a list.
 
 ## How the repository is laid out
 
 ```
-/                 <- the published site (index.html, assets/, fonts/), generated, do not edit
+/                 <- the published site (index.html, assets/, work/, ...), generated, do not edit
 /site             ← the source project
   /src
-    /components   Cover, Ledger, Works, Craft, Beyond, Colophon,
-                  plus Header, Menu, Intro, Motion, Odometer
-    /data/site.ts ALL the content: copy, projects, experience, links
-    /lib/hooks.ts theme store, the `--hue` stack, viewport and intro helpers
-  /public         favicon, og image, robots, sitemap, self-hosted fonts
-  /scripts        publish, font fetcher, social-image generator
+    /components   Hero, Products (ToyBox, ProductWorld, FlipPhone), Builds, Career, Skills,
+                  Beyond, About, Contact, ProjectPage, plus Nav, Menu, Intro, Curtain,
+                  Pointer, Liquid (the shader), Kinetic, Marquee, Motion, Frames
+      /demos      the five playable product toys
+    /data/site.ts ALL the content: copy, projects, experience, links, colour worlds
+    /lib          world.ts (colour worlds), router.ts (/work/<id>), smooth.ts, hooks.ts
+  /public         favicon, og image, robots, self-hosted fonts, brand marks, screenshots
+  /scripts        publish, font fetcher, screenshot capture, social-image generator
 ```
 
 GitHub Pages serves a user site from the **default branch, root folder**, which is
@@ -43,7 +69,8 @@ site/src/data/site.ts
 ```
 
 Add a project, change a job description, update a link. It is all there, typed.
-Nothing else needs touching.
+A project's `kind` decides whether it is one of my products (a full-colour world, first) or
+a client build (the sideways row), `world` sets its colours, and `demo` picks its toy.
 
 ## Local development
 
@@ -72,6 +99,8 @@ Then commit the changed root files.
 ```bash
 cd site
 node scripts/fetch-fonts.mjs           # re-download the self-hosted woff2 subsets
+npm install --no-save playwright sharp
+node scripts/capture-shots.mjs         # re-screenshot every live site into public/shots
 npm install --no-save sharp
 node scripts/make-images.mjs           # regenerate og.png + apple-touch-icon.png
 BRAND_SRC=/path/to/logos node scripts/make-brand.mjs   # normalise logos + portrait
@@ -99,4 +128,4 @@ to the domain. **Enforce HTTPS** in Settings → Pages once the certificate is i
 
 To move to a different domain, change `site/public/CNAME` and the absolute URLs in
 `site/index.html` (canonical, `og:url`, `og:image`), `site/public/robots.txt`,
-`site/public/sitemap.xml` and `site/scripts/make-images.mjs`.
+`ORIGIN` in `site/vite.config.ts` (project pages and the sitemap) and `site/scripts/make-images.mjs`.

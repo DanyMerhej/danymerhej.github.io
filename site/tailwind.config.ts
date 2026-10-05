@@ -1,42 +1,46 @@
 import type { Config } from 'tailwindcss';
 
+/**
+ * The three page colours are registered custom properties that cross-fade as
+ * the colour world changes (see src/lib/world.ts). Opacity modifiers such as
+ * `text-fg/60` are mixed against transparent, so they follow along.
+ */
+const mix = (v: string) => `color-mix(in srgb, var(${v}) calc(<alpha-value> * 100%), transparent)`;
+
 export default {
-  darkMode: 'class',
   content: ['./index.html', './src/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
-        paper: 'rgb(var(--paper) / <alpha-value>)',
-        'paper-2': 'rgb(var(--paper-2) / <alpha-value>)',
-        ink: 'rgb(var(--ink) / <alpha-value>)',
-        'ink-2': 'rgb(var(--ink-2) / <alpha-value>)',
-        'ink-3': 'rgb(var(--ink-3) / <alpha-value>)',
-        rule: 'rgb(var(--rule) / <alpha-value>)',
-        hue: 'rgb(var(--hue) / <alpha-value>)',
+        bg: mix('--bg'),
+        fg: mix('--fg'),
+        accent: mix('--accent'),
       },
       fontFamily: {
-        display: ['Syne', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-        sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['"Bricolage Grotesque"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        sans: ['"DM Sans"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
         mono: ['"JetBrains Mono"', 'ui-monospace', 'SFMono-Regular', 'monospace'],
         serif: ['"Instrument Serif"', 'ui-serif', 'Georgia', 'serif'],
       },
       transitionTimingFunction: {
-        editorial: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        out: 'cubic-bezier(0.22, 1, 0.36, 1)',
+        spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
       keyframes: {
-        drift: {
-          '0%': { transform: 'translate3d(-12%, -6%, 0) rotate(0deg)' },
-          '50%': { transform: 'translate3d(12%, 6%, 0) rotate(180deg)' },
-          '100%': { transform: 'translate3d(-12%, -6%, 0) rotate(360deg)' },
+        spin: { to: { transform: 'rotate(360deg)' } },
+        floaty: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-8px)' },
         },
-        ticker: {
-          from: { transform: 'translateX(0)' },
-          to: { transform: 'translateX(-50%)' },
+        pulse2: {
+          '0%': { transform: 'scale(1)', opacity: '0.7' },
+          '100%': { transform: 'scale(2.4)', opacity: '0' },
         },
       },
       animation: {
-        drift: 'drift 22s ease-in-out infinite',
-        ticker: 'ticker 44s linear infinite',
+        'spin-slow': 'spin 18s linear infinite',
+        floaty: 'floaty 3.2s ease-in-out infinite',
+        pulse2: 'pulse2 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite',
       },
     },
   },

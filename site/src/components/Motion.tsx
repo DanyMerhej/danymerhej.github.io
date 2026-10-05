@@ -1,4 +1,5 @@
 import { motion, useReducedMotion } from 'framer-motion';
+import { Fragment } from 'react';
 import type { ReactNode } from 'react';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -35,7 +36,9 @@ export function Mask({
 
   return (
     <MotionTag
-      className={`overflow-hidden ${className ?? ''}`}
+      // The padding gives descenders room inside the clip; the negative margin
+      // gives the space back so the line still sits where the type says.
+      className={`-mb-[0.16em] overflow-hidden pb-[0.16em] ${className ?? ''}`}
       initial="hidden"
       {...(immediate
         ? { animate: 'shown' }
@@ -122,18 +125,46 @@ export function Rise({
   );
 }
 
-/** A hairline that draws itself across the page. */
-export function DrawRule({ delay = 0 }: { delay?: number }) {
+/**
+ * A word whose letters tumble up into place, one after another, when it
+ * scrolls into view.
+ */
+export function Letters({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
   const reduced = useReducedMotion();
+  if (reduced) return <span className={className}>{text}</span>;
 
   return (
-    <motion.div
-      aria-hidden="true"
-      className="h-px w-full origin-left bg-rule"
-      initial={reduced ? { opacity: 0 } : { scaleX: 0 }}
-      whileInView={reduced ? { opacity: 1 } : { scaleX: 1 }}
-      viewport={{ once: true }}
-      transition={{ duration: 1.4, delay, ease: EASE }}
-    />
+    <motion.span
+      className={`inline-block ${className ?? ''}`}
+      initial="hidden"
+      whileInView="shown"
+      viewport={{ once: true, margin: '-12% 0px -12% 0px' }}
+      transition={{ staggerChildren: 0.035, delayChildren: delay }}
+    >
+      <span className="sr-only">{text}</span>
+      {/* Letters are grouped by word, so a long name still wraps between words
+          and never in the middle of one. */}
+      {text.split(' ').map((word, w) => (
+        <Fragment key={w}>
+          {w > 0 && ' '}
+          <span aria-hidden="true" className="inline-block whitespace-nowrap">
+            {word.split('').map((c, i) => (
+              <span key={i} className="-mb-[0.16em] inline-block overflow-hidden pb-[0.16em] align-bottom">
+                <motion.span
+                  className="inline-block origin-bottom-left"
+                  variants={{
+                    hidden: { y: '110%', rotate: 12 },
+                    shown: { y: 0, rotate: 0 },
+                  }}
+                  transition={{ duration: 0.85, ease: EASE }}
+                >
+                  {c}
+                </motion.span>
+              </span>
+            ))}
+          </span>
+        </Fragment>
+      ))}
+    </motion.span>
   );
 }

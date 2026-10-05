@@ -1,95 +1,313 @@
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
-import { ArrowUpRight, Instagram } from 'lucide-react';
-import { ventures } from '../data/site';
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
+import type { MotionValue } from 'framer-motion';
+import { ArrowUpRight, Cloud, CloudOff, Lightbulb, Instagram, Radio } from 'lucide-react';
+import { useRef, useState } from 'react';
 import type { Venture } from '../data/site';
-import { useHueClaim, useInCentre } from '../lib/hooks';
-import { Mask, Words } from './Motion';
+import { capabilities, ventures, worlds } from '../data/site';
+import { useInCentre, useWorld } from '../lib/hooks';
+import { useWorldClaim } from '../lib/world';
+import { Mask, Rise, Words } from './Motion';
 
-/** The two things outside software, each given its own colour and half spread. */
+const home = capabilities.find((c) => c.title.toLowerCase().includes('automation'));
+
+const ROOMS = [
+  { id: 'living', name: 'Living room', x: 0, y: 0, w: 58, h: 55 },
+  { id: 'kitchen', name: 'Kitchen', x: 58, y: 0, w: 42, h: 55 },
+  { id: 'bed', name: 'Bedroom', x: 0, y: 55, w: 46, h: 45 },
+  { id: 'office', name: 'Office', x: 46, y: 55, w: 54, h: 45 },
+] as const;
+type RoomId = (typeof ROOMS)[number]['id'];
+
+const SCENES: { name: string; on: RoomId[] }[] = [
+  { name: 'Evening', on: ['living', 'kitchen'] },
+  { name: 'Movie night', on: ['living'] },
+  { name: 'Working', on: ['office'] },
+  { name: 'All off', on: [] },
+];
+
 export function Beyond() {
+  const ref = useRef<HTMLDivElement>(null);
+  useWorld(ref, 'beyond', worlds.midnight);
+
   return (
-    <section id="beyond" className="scroll-mt-16 py-24 md:py-36">
-      <div className="gutter">
-        <p className="label">04 / Beyond code</p>
-        <Mask as="h2" className="display section-type mt-6 max-w-4xl">
-          <span className="block">Not everything</span>
-        </Mask>
-        <Mask as="div" delay={0.08} className="display section-type max-w-4xl">
-          <span className="block hue">I make is software.</span>
-        </Mask>
-        <p className="lede pretty mt-8 max-w-2xl">
-          <Words text="Two things I run outside the terminal. They keep the other half of the job honest: taste, audience, and knowing why something works." />
-        </p>
+    <section id="beyond" className="relative">
+      <div ref={ref} className="py-24 md:py-36">
+        <div className="gutter">
+          <p className="eyebrow">Beyond code</p>
+          <Mask as="h2" className="display h-section mt-6 max-w-5xl">
+            <span className="block">Not everything</span>
+          </Mask>
+          <Mask as="p" delay={0.06} className="serif-i h-section max-w-5xl text-accent">
+            <span className="block">I make is software.</span>
+          </Mask>
+          <p className="lede pretty mt-8 max-w-2xl">
+            <Words text="Houses that do what they are told, photographs, and a skincare brand. They keep the other half of the job honest: taste, audience, and knowing why something works." />
+          </p>
+        </div>
+
+        <div className="gutter mt-14 grid grid-cols-1 items-center gap-10 md:mt-20 md:grid-cols-12">
+          <div className="md:col-span-5">
+            <h3 className="display text-[clamp(2rem,8vw,3.4rem)]">{home?.title ?? 'Home automation'}</h3>
+            <p className="prose-body pretty mt-4">{home?.body}</p>
+            <ul className="mt-6 flex flex-wrap gap-1.5">
+              {home?.points.map((p) => (
+                <li key={p} className="chip">
+                  {p}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="md:col-span-7">
+            <House />
+          </div>
+        </div>
       </div>
 
       {ventures.map((v, i) => (
-        <Spread key={v.id} venture={v} index={i} />
+        <VentureSpread key={v.id} venture={v} index={i} />
       ))}
     </section>
   );
 }
 
-function Spread({ venture, index }: { venture: Venture; index: number }) {
-  const ref = useRef<HTMLDivElement>(null);
+/** A floor plan you can switch on room by room, on a mesh that keeps working with the internet unplugged. */
+function House() {
+  const [lit, setLit] = useState<Set<RoomId>>(new Set(['living']));
+  const [online, setOnline] = useState(true);
+  const [pulse, setPulse] = useState<{ id: number; room: RoomId } | null>(null);
   const reduced = useReducedMotion();
-  const centred = useInCentre(ref);
-  useHueClaim(venture.id, venture.hues[0], centred);
 
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const markY = useTransform(scrollYProgress, [0, 1], ['16%', '-16%']);
+  const toggle = (id: RoomId) => {
+    setLit((s) => {
+      const n = new Set(s);
+      if (n.has(id)) n.delete(id);
+      else n.add(id);
+      return n;
+    });
+    setPulse({ id: Date.now(), room: id });
+  };
 
-  const flipped = index % 2 === 1;
+  const scene = (on: RoomId[]) => {
+    setLit(new Set(on));
+    on.forEach((r, i) => setTimeout(() => setPulse({ id: Date.now() + i, room: r }), i * 120));
+  };
+
+  const hub = { x: 50, y: 55 };
 
   return (
-    <div ref={ref} className="gutter mt-20 md:mt-32">
-      <a
-        href={venture.href}
-        target="_blank"
-        rel="noreferrer noopener"
-        className="group grid grid-cols-1 items-center gap-8 border-t border-rule pt-10 md:grid-cols-12 md:gap-12"
-      >
-        <motion.div
-          className={`md:col-span-4 ${flipped ? 'md:order-2 md:col-start-9' : ''}`}
-          style={reduced ? undefined : { y: markY }}
-        >
-          <span
-            className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[1.5rem] border
-                       transition-transform duration-700 group-hover:scale-105 sm:h-36 sm:w-36
-                       md:h-48 md:w-48 md:rounded-[2rem]"
-            style={{
-              background: 'linear-gradient(150deg, #16181C, #08090B)',
-              borderColor: `${venture.hues[0]}33`,
-              boxShadow: `0 24px 60px -20px ${venture.hues[0]}55`,
-            }}
-          >
-            <img
-              src={venture.logo}
-              alt=""
-              width={320}
-              height={320}
-              loading="lazy"
-              decoding="async"
-              className="h-full w-full object-contain p-4 md:p-6"
-            />
-          </span>
-        </motion.div>
+    <div>
+      <div className="relative aspect-[10/8] w-full overflow-hidden rounded-[1.75rem] border-2 border-fg/15 bg-[#091024]">
+        {ROOMS.map((r) => {
+          const on = lit.has(r.id);
+          return (
+            <button
+              key={r.id}
+              type="button"
+              onClick={() => toggle(r.id)}
+              aria-pressed={on}
+              aria-label={`${r.name} lights`}
+              className="absolute border border-white/10 text-left transition-colors duration-700"
+              style={{
+                left: `${r.x}%`,
+                top: `${r.y}%`,
+                width: `${r.w}%`,
+                height: `${r.h}%`,
+                background: on
+                  ? 'radial-gradient(circle at 50% 45%, rgba(255,200,97,0.75), rgba(255,170,60,0.18) 60%, rgba(9,16,36,0.2))'
+                  : 'rgba(255,255,255,0.02)',
+              }}
+            >
+              <span className={`absolute left-3 top-3 text-[12px] font-semibold ${on ? 'text-[#2A1A00]' : 'text-white/60'}`}>
+                {r.name}
+              </span>
+              <motion.span
+                className="absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full"
+                animate={{
+                  backgroundColor: on ? '#FFC861' : 'rgba(255,255,255,0.08)',
+                  boxShadow: on ? '0 0 30px 8px rgba(255,200,97,0.6)' : '0 0 0 0 rgba(0,0,0,0)',
+                }}
+                transition={{ duration: 0.5 }}
+              >
+                <Lightbulb className={`h-4 w-4 ${on ? 'text-[#2A1A00]' : 'text-white/60'}`} />
+              </motion.span>
+            </button>
+          );
+        })}
 
-        <div className={`md:col-span-7 ${flipped ? 'md:order-1 md:col-start-1' : 'md:col-start-6'}`}>
-          <p className="label">{venture.kind}</p>
-          <h3 className="display mt-3 text-[2.1rem] leading-none transition-colors duration-500 group-hover:text-hue md:text-[3.4rem]">
-            {venture.name}
-          </h3>
-          <p className="mt-6 max-w-xl text-[0.98rem] leading-relaxed text-ink-2 pretty md:text-lg">
-            {venture.body}
-          </p>
-          <span className="mt-7 inline-flex items-center gap-2 text-sm text-ink">
-            <Instagram className="h-4 w-4 hue" aria-hidden="true" />
-            <span className="ul-draw">{venture.handle}</span>
-            <ArrowUpRight className="h-4 w-4 text-ink-3 transition-transform duration-500 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </span>
+        {/* The mesh: hub to every room, with a pulse along the line that just changed. */}
+        <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {ROOMS.map((r) => (
+            <line
+              key={r.id}
+              x1={hub.x}
+              y1={hub.y}
+              x2={r.x + r.w - 8}
+              y2={r.y + r.h - 10}
+              stroke="#8FB8FF"
+              strokeOpacity={0.35}
+              strokeWidth={0.4}
+              strokeDasharray="1.2 1.2"
+              vectorEffect="non-scaling-stroke"
+            />
+          ))}
+          <AnimatePresence>
+            {pulse && !reduced && (() => {
+              const r = ROOMS.find((x) => x.id === pulse.room)!;
+              return (
+                <motion.circle
+                  key={pulse.id}
+                  r={1.4}
+                  fill="#C6F94E"
+                  initial={{ cx: hub.x, cy: hub.y, opacity: 1 }}
+                  animate={{ cx: r.x + r.w - 8, cy: r.y + r.h - 10, opacity: [1, 1, 0] }}
+                  transition={{ duration: 0.55, ease: 'easeOut' }}
+                />
+              );
+            })()}
+          </AnimatePresence>
+        </svg>
+
+        <div
+          className="pointer-events-none absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-1.5 rounded-full bg-[#C6F94E] px-2.5 py-1 text-[11px] font-bold text-[#0D1430]"
+          style={{ left: `${hub.x}%`, top: `${hub.y}%` }}
+        >
+          <Radio className="h-3.5 w-3.5" /> Hub
         </div>
-      </a>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {SCENES.map((s) => (
+          <button key={s.name} type="button" onClick={() => scene(s.on)} className="btn-ghost min-h-[2.6rem] px-4 text-[14px]">
+            {s.name}
+          </button>
+        ))}
+        <button
+          type="button"
+          onClick={() => setOnline((o) => !o)}
+          aria-pressed={!online}
+          className={`btn min-h-[2.6rem] px-4 text-[14px] ${online ? 'bg-fg text-bg' : 'bg-[#FF6B6B] text-[#2A0505]'}`}
+        >
+          {online ? <Cloud className="h-4 w-4" /> : <CloudOff className="h-4 w-4" />}
+          {online ? 'Unplug the internet' : 'Internet is off'}
+        </button>
+      </div>
+      <AnimatePresence mode="wait">
+        <motion.p
+          key={String(online)}
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="mt-3 text-[15px] text-fg/75"
+        >
+          {online
+            ? 'Tap a room, or pick a scene.'
+            : 'No cloud, no problem: the hub runs locally, so the lights still answer. Try a room.'}
+        </motion.p>
+      </AnimatePresence>
+    </div>
+  );
+}
+
+function VentureSpread({ venture, index }: { venture: Venture; index: number }) {
+  const ref = useRef<HTMLElement>(null);
+  const centred = useInCentre(ref);
+  const world = index === 0 ? worlds.sky : worlds.peach;
+  useWorldClaim(venture.id, world, centred);
+
+  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+
+  return (
+    <article ref={ref} className="py-20 md:py-28">
+      <div className="gutter grid grid-cols-1 items-center gap-10 md:grid-cols-12">
+        <div className={`flex justify-center md:col-span-5 ${index % 2 ? 'md:order-2' : ''}`}>
+          {index === 0 ? (
+            <Aperture progress={scrollYProgress} />
+          ) : (
+            <Sparkle />
+          )}
+        </div>
+        <div className={`md:col-span-7 ${index % 2 ? 'md:order-1' : ''}`}>
+          <p className="eyebrow">{venture.kind}</p>
+          <h3 className="display mt-5 text-[clamp(2.6rem,12vw,5.4rem)]">{venture.name}</h3>
+          <Rise>
+            <p className="prose-body pretty mt-5 max-w-xl">{venture.body}</p>
+          </Rise>
+          <a href={venture.href} target="_blank" rel="noreferrer noopener" className="btn-solid group mt-8">
+            <Instagram className="h-4 w-4" />
+            {venture.handle}
+            <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </a>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+/** A lens whose iris opens as you scroll to it. */
+function Aperture({ progress }: { progress: MotionValue<number> }) {
+  const reduced = useReducedMotion();
+  const blades = 8;
+  const spin = useTransform(progress, [0, 1], [-70, 70]);
+  // Each blade covers the lens down to the edge of the opening; the opening's
+  // radius grows from a pinhole to wide open as the lens reaches the middle.
+  const height = useTransform(progress, [0.1, 0.48], ['146%', '112%']);
+
+  return (
+    <div className="relative aspect-square w-[min(78vw,380px)] rounded-full bg-[#0D1A3A] p-[6%] shadow-[0_40px_80px_-30px_rgba(13,26,58,0.8)]">
+      <div className="relative h-full w-full overflow-hidden rounded-full bg-gradient-to-br from-[#8FB8FF] via-[#C7D8F5] to-[#FFD9B0]">
+        <motion.div className="absolute inset-0" style={reduced ? undefined : { rotate: spin }}>
+          {Array.from({ length: blades }).map((_, i) => (
+            <div key={i} className="absolute inset-0" style={{ transform: `rotate(${(360 / blades) * i}deg)` }}>
+              <motion.div
+                className="absolute -left-1/2 -top-full w-[200%] origin-bottom border-b-2 border-[#22345F] bg-[#0D1A3A]"
+                style={{ height: reduced ? '118%' : height, rotate: 14 }}
+              />
+            </div>
+          ))}
+        </motion.div>
+        <div className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_0_0_10px_#0D1A3A]" />
+      </div>
+      <img
+        src={ventures[0].logo}
+        alt=""
+        width={160}
+        height={160}
+        loading="lazy"
+        className="absolute bottom-[3%] right-[3%] h-[24%] w-[24%] rounded-full bg-[#0B0A10] object-contain p-2 ring-4 ring-bg"
+      />
+    </div>
+  );
+}
+
+function Sparkle() {
+  const reduced = useReducedMotion();
+  return (
+    <div className="relative aspect-square w-[min(78vw,380px)]">
+      <motion.div
+        className="absolute inset-[6%] rounded-[38%] bg-gradient-to-br from-[#F2B8C6] via-[#F7D9C4] to-[#E8D5B7]"
+        animate={reduced ? undefined : { borderRadius: ['38%', '46% 30% 44% 34%', '32% 48% 36% 46%', '38%'], rotate: [0, 8, -6, 0] }}
+        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+      />
+      <img
+        src={ventures[1].logo}
+        alt=""
+        width={320}
+        height={320}
+        loading="lazy"
+        className="absolute inset-[24%] h-[52%] w-[52%] rounded-full bg-[#0B0A10] object-contain p-4"
+      />
+      {[0, 1, 2, 3, 4].map((i) => (
+        <motion.span
+          key={i}
+          aria-hidden="true"
+          className="absolute text-[28px] text-[#D6336C]"
+          style={{ left: `${[8, 80, 70, 15, 50][i]}%`, top: `${[20, 12, 78, 72, 2][i]}%` }}
+          animate={reduced ? undefined : { scale: [0.6, 1.2, 0.6], rotate: [0, 90, 180], opacity: [0.4, 1, 0.4] }}
+          transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.45 }}
+        >
+          ✦
+        </motion.span>
+      ))}
     </div>
   );
 }

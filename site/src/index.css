@@ -4,80 +4,74 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * The page has no fixed palette. Each section and each project paints it in its
+ * own colour world (src/lib/world.ts) by rewriting these three values, and
+ * registering them as colours is what lets the browser cross-fade between
+ * worlds instead of snapping.
+ */
+@property --bg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #110e1c;
+}
+@property --fg {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #fff6ea;
+}
+@property --accent {
+  syntax: '<color>';
+  inherits: true;
+  initial-value: #c6f94e;
+}
+
 @layer base {
-  /*
-   * The shell is monochrome on purpose. Every colour on the page belongs to a
-   * product, and arrives with it: `--hue` is rewritten as each work chapter
-   * scrolls into view, so the page takes on the colour of whatever you are
-   * looking at and returns to ink between chapters.
-   */
   :root {
-    --paper: 244 241 234;
-    --paper-2: 249 247 241;
-    --ink: 18 17 15;
-    --ink-2: 92 86 78;
-    --ink-3: 146 138 128;
-    --rule: 216 209 196;
-    --hue: 18 17 15;
-    --grain: 0.03;
-    --curtain: 244 241 234;
-  }
-
-  html.dark {
-    --paper: 14 13 12;
-    --paper-2: 21 20 18;
-    --ink: 243 240 233;
-    --ink-2: 166 158 148;
-    --ink-3: 112 106 98;
-    --rule: 45 42 38;
-    --hue: 243 240 233;
-    --grain: 0.045;
-    --curtain: 14 13 12;
-  }
-
-  * {
-    @apply border-rule;
+    --bg: #110e1c;
+    --fg: #fff6ea;
+    --accent: #c6f94e;
+    transition:
+      --bg 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+      --fg 0.9s cubic-bezier(0.22, 1, 0.36, 1),
+      --accent 0.9s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   html {
+    position: relative;
+    background: var(--bg);
     -webkit-text-size-adjust: 100%;
     font-optical-sizing: auto;
-    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    @apply bg-paper text-ink font-sans antialiased;
-    overflow-x: hidden;
-    /* Colour changes are the page's main motion; ease them, never snap. */
-    transition: background-color 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+    @apply font-sans antialiased;
+    background: var(--bg);
+    color: var(--fg);
+    font-size: 17px;
+    line-height: 1.6;
+    overflow-x: clip;
   }
 
   ::selection {
-    background: rgb(var(--hue));
-    color: rgb(var(--paper));
+    background: var(--accent);
+    color: var(--bg);
   }
 
   :focus-visible {
-    outline: 2px solid rgb(var(--hue));
-    outline-offset: 4px;
-    border-radius: 2px;
+    outline: 2px solid var(--accent);
+    outline-offset: 3px;
+    border-radius: 6px;
   }
 
-  ::-webkit-scrollbar {
-    width: 9px;
-  }
-  ::-webkit-scrollbar-track {
-    background: rgb(var(--paper));
-  }
-  ::-webkit-scrollbar-thumb {
-    background: rgb(var(--rule));
-    border-radius: 99px;
-    border: 2px solid rgb(var(--paper));
+  img {
+    -webkit-user-drag: none;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    html {
-      scroll-behavior: auto;
+    :root {
+      transition: none;
     }
     *,
     *::before,
@@ -90,107 +84,105 @@
 }
 
 @layer components {
-  /* Editorial margins: generous on desktop, edge to edge on a phone. */
   .gutter {
-    @apply mx-auto w-full max-w-[100rem] px-5 sm:px-8 lg:px-14;
+    @apply mx-auto w-full max-w-[90rem] px-5 sm:px-8 lg:px-12;
   }
 
-  .label {
-    @apply font-mono text-[10px] uppercase tracking-[0.28em] text-ink-3;
-  }
-
-  .rule-t {
-    @apply border-t border-rule;
-  }
-
-  /* Display type. Syne is wide and architectural, so it needs negative tracking
-     at size and almost none at small sizes. */
+  /*
+   * Display type. Bricolage Grotesque is a variable face with weight, width
+   * and optical size, so headlines can be heavy without being harsh, and some
+   * of them breathe through the axes as they animate.
+   */
   .display {
-    @apply font-display font-extrabold;
+    @apply font-display;
+    font-weight: 700;
+    font-stretch: 92%;
     letter-spacing: -0.035em;
-    line-height: 0.86;
-    /* Safety net for large system text: break a word rather than overflow. */
+    line-height: 0.92;
     overflow-wrap: break-word;
   }
 
-  /* The two masthead lines are set at different sizes so five letters and six
-     letters end up the same width, the way a magazine fits a masthead. The rem
-     ceilings stop them overrunning the container once the page hits max width. */
-  .cover-1 {
-    font-size: clamp(3.1rem, 15.2vw, 15.4rem);
+  .h-hero {
+    font-size: clamp(3.4rem, 19vw, 13rem);
   }
 
-  .cover-2 {
-    font-size: clamp(2.55rem, 12.5vw, 12.7rem);
+  .h-section {
+    font-size: clamp(2.7rem, 11.5vw, 7.2rem);
   }
 
-  .chapter-type {
-    font-size: clamp(1.95rem, 7.4vw, 6.4rem);
-    line-height: 0.9;
+  .h-project {
+    font-size: clamp(3rem, 15vw, 9.5rem);
   }
 
-  .section-type {
-    font-size: clamp(2.1rem, 6.2vw, 4.75rem);
-    line-height: 0.94;
+  .h-card {
+    font-size: clamp(1.7rem, 6.5vw, 2.6rem);
+    line-height: 1;
+  }
+
+  /* A soft label in a pill, in place of tiny tracked-out capitals. */
+  .eyebrow {
+    @apply inline-flex items-center gap-2 rounded-full border border-fg/20 px-3 py-1 text-[13px] font-medium leading-5;
   }
 
   .lede {
-    @apply text-lg leading-relaxed text-ink-2 sm:text-xl md:text-2xl;
-    letter-spacing: -0.011em;
+    @apply text-[1.15rem] leading-[1.55] text-fg/80 sm:text-xl md:text-[1.4rem];
+    letter-spacing: -0.006em;
   }
 
-  /* A link that draws its rule from the left on hover. */
+  .prose-body {
+    @apply text-[1.02rem] leading-[1.7] text-fg/80 md:text-[1.1rem];
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-fg/[0.08] px-3 py-1.5 text-[13px] font-medium leading-none text-fg/85;
+  }
+
+  .btn {
+    @apply inline-flex min-h-[3.25rem] select-none items-center justify-center gap-2.5 rounded-full px-6 text-[1rem] font-semibold transition-[transform,background-color,color,box-shadow] duration-300 ease-out active:scale-[0.96];
+  }
+  .btn-solid {
+    @apply btn bg-fg text-bg;
+  }
+  .btn-solid:hover {
+    box-shadow: 0 12px 30px -10px color-mix(in srgb, var(--fg) 60%, transparent);
+  }
+  .btn-accent {
+    @apply btn bg-accent text-bg;
+  }
+  .btn-ghost {
+    @apply btn border-2 border-fg/20 text-fg;
+  }
+  .btn-ghost:hover {
+    @apply border-fg/60;
+  }
+
+  .card {
+    @apply rounded-[1.75rem] bg-fg/[0.06];
+  }
+
+  /* A link whose underline draws in from the left. */
   .ul-draw {
-    background-image: linear-gradient(rgb(var(--hue)), rgb(var(--hue)));
-    background-size: 0% 1.5px;
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 2px;
     background-position: 0 100%;
     background-repeat: no-repeat;
-    transition: background-size 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+    transition: background-size 0.45s cubic-bezier(0.22, 1, 0.36, 1);
   }
   .ul-draw:hover,
   a:hover > .ul-draw {
-    background-size: 100% 1.5px;
+    background-size: 100% 2px;
   }
 
-  .tag {
-    @apply inline-flex items-center rounded-full border border-rule px-3 py-1 font-mono
-           text-[11px] tracking-tight text-ink-2;
-  }
-
-  /* Big tactile button. 48px minimum, so it is comfortable with a thumb. */
-  .action {
-    @apply inline-flex min-h-[3rem] items-center justify-center gap-2.5 rounded-full px-6
-           text-[0.95rem] font-medium transition-all duration-500;
-    transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
-  }
-  .action-solid {
-    @apply action;
-    background: rgb(var(--ink));
-    color: rgb(var(--paper));
-  }
-  .action-solid:hover {
-    background: rgb(var(--hue));
-    color: rgb(var(--paper));
-    transform: translateY(-2px);
-  }
-  .action-line {
-    @apply action border border-rule text-ink;
-  }
-  .action-line:hover {
-    border-color: rgb(var(--hue));
-    color: rgb(var(--hue));
-    transform: translateY(-2px);
-  }
-
-  /* Paper grain. Sits above everything, ignores pointer events. */
+  /* Paper grain over everything, quietly, so flat colour reads as a surface. */
   .grain::after {
     content: '';
     position: fixed;
-    inset: -50%;
-    z-index: 200;
+    inset: 0;
+    z-index: 500;
     pointer-events: none;
-    opacity: var(--grain);
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='260' height='260'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='260' height='260' filter='url(%23n)'/%3E%3C/svg%3E");
+    opacity: 0.06;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='220' height='220' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 }
 
@@ -208,14 +200,22 @@
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  /* Clip a moving fill to the glyphs themselves. */
-  .text-fill {
-    -webkit-background-clip: text;
-    background-clip: text;
+  .text-outline {
     color: transparent;
-    -webkit-text-fill-color: transparent;
+    -webkit-text-stroke: 1.5px var(--fg);
   }
-  .hue {
-    color: rgb(var(--hue));
+  .serif-i {
+    @apply font-serif italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
   }
+  .touch-pan-y {
+    touch-action: pan-y;
+  }
+}
+
+/* The custom cursor replaces the system one on mouse and trackpad only. */
+html.has-cursor,
+html.has-cursor * {
+  cursor: none !important;
 }

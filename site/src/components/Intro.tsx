@@ -1,75 +1,97 @@
-import { motion, useReducedMotion } from 'framer-motion';
-import { useEffect } from 'react';
-import { profile } from '../data/site';
-
-const EASE = [0.76, 0, 0.24, 1] as const;
+import { animate, motion, useReducedMotion } from 'framer-motion';
+import { useEffect, useRef } from 'react';
+import { profile, projects, worlds } from '../data/site';
 
 /**
- * The opening curtain. Counts the six products up, then splits and clears the
- * screen. Plays once per session and self-dismisses, so it can never trap a
- * visitor behind it.
+ * The opening: a counter runs to 100 while every product's mark pops into a
+ * ring around it, then the whole sheet lifts away on a curved edge to reveal
+ * the page. Plays once per session, ends itself, and never traps anyone.
  */
 export function Intro({ onDone }: { onDone: () => void }) {
   const reduced = useReducedMotion();
+  const counter = useRef<HTMLSpanElement>(null);
 
   useEffect(() => {
-    const id = setTimeout(onDone, reduced ? 200 : 2050);
-    return () => clearTimeout(id);
+    if (reduced) {
+      const id = setTimeout(onDone, 50);
+      return () => clearTimeout(id);
+    }
+    const c = animate(0, 100, {
+      duration: 1.6,
+      ease: [0.65, 0, 0.35, 1],
+      onUpdate: (v) => {
+        if (counter.current) counter.current.textContent = String(Math.round(v)).padStart(3, '0');
+      },
+    });
+    const id = setTimeout(onDone, 2000);
+    return () => {
+      c.stop();
+      clearTimeout(id);
+    };
   }, [onDone, reduced]);
 
   if (reduced) return null;
 
+  const n = projects.length;
+
   return (
     <motion.div
-      className="fixed inset-0 z-[300]"
+      className="fixed inset-0 z-[700] flex items-center justify-center"
       aria-hidden="true"
-      initial={{ opacity: 1 }}
-      exit={{ opacity: 0, transition: { duration: 0.25, delay: 0.75 } }}
+      initial={{ y: 0 }}
+      exit={{ y: '-100%' }}
+      transition={{ duration: 1, ease: [0.76, 0, 0.24, 1] }}
+      style={{ background: worlds.night.bg, color: worlds.night.fg }}
     >
-      {/* Two panels that part like a shutter. */}
-      {[0, 1].map((half) => (
-        <motion.div
-          key={half}
-          className="absolute inset-x-0 h-1/2 bg-paper"
-          style={half === 0 ? { top: 0 } : { bottom: 0 }}
-          initial={{ y: 0 }}
-          exit={{ y: half === 0 ? '-100%' : '100%' }}
-          transition={{ duration: 0.95, ease: EASE }}
-        />
-      ))}
+      {/* The curved trailing edge, so the sheet lifts like a page rather than a blind. */}
+      <motion.svg
+        className="absolute left-0 top-full h-[18vh] w-full"
+        viewBox="0 0 100 100"
+        preserveAspectRatio="none"
+        initial={{ scaleY: 0 }}
+        exit={{ scaleY: [0, 1, 0] }}
+        transition={{ duration: 1, ease: [0.76, 0, 0.24, 1] }}
+        style={{ originY: 0 }}
+      >
+        <path d="M0 0 Q50 100 100 0 Z" fill={worlds.night.bg} />
+      </motion.svg>
 
-      <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
-        <motion.div
-          className="text-center"
-          exit={{ opacity: 0, transition: { duration: 0.3 } }}
-        >
-          <div className="overflow-hidden">
-            <motion.p
-              className="display text-[13vw] leading-none sm:text-[9vw]"
-              initial={{ y: '110%' }}
-              animate={{ y: 0 }}
-              transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+      <div className="relative flex h-[min(80vw,420px)] w-[min(80vw,420px)] items-center justify-center">
+        {projects.map((p, i) => {
+          const a = (i / n) * Math.PI * 2 - Math.PI / 2;
+          return (
+            <motion.span
+              key={p.id}
+              className="absolute flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl sm:h-14 sm:w-14"
+              style={{
+                left: `calc(50% + ${Math.cos(a) * 42}% - 1.5rem)`,
+                top: `calc(50% + ${Math.sin(a) * 42}% - 1.5rem)`,
+                background: 'linear-gradient(150deg, #1D1B24, #0B0A10)',
+                boxShadow: `0 0 0 2px ${p.hues[0]}66, 0 10px 30px -8px ${p.hues[0]}`,
+              }}
+              initial={{ scale: 0, rotate: -40 }}
+              animate={{ scale: 1, rotate: 0 }}
+              exit={{ scale: 0, transition: { duration: 0.3 } }}
+              transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.1 + i * 0.12 }}
             >
-              {profile.name}
-            </motion.p>
-          </div>
+              <img src={p.logo} alt="" width={64} height={64} className="h-full w-full object-contain p-1.5" />
+            </motion.span>
+          );
+        })}
 
-          <motion.div
-            className="mx-auto mt-6 h-px bg-ink"
-            initial={{ width: 0 }}
-            animate={{ width: '100%' }}
-            transition={{ duration: 1.1, delay: 0.35, ease: [0.22, 1, 0.36, 1] }}
-          />
-
-          <motion.p
-            className="label mt-5"
+        <div className="text-center">
+          <span ref={counter} className="display block text-[clamp(4.5rem,24vw,9rem)] tabular-nums leading-none">
+            000
+          </span>
+          <motion.span
+            className="mt-2 block text-[15px] font-medium opacity-70"
             initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, delay: 0.75 }}
+            animate={{ opacity: 0.7 }}
+            transition={{ delay: 0.3 }}
           >
-            Portfolio, {new Date().getFullYear()}
-          </motion.p>
-        </motion.div>
+            {profile.name} · warming up
+          </motion.span>
+        </div>
       </div>
     </motion.div>
   );

@@ -5,7 +5,8 @@
  * Self-hosting keeps the page independent of fonts.googleapis.com: one less
  * third party in the critical path, and no request leaves the visitor's browser.
  *
- * Run manually when a family or weight changes:  node scripts/fetch-fonts.mjs
+ * Run manually when a family or weight changes:
+ *   NODE_USE_ENV_PROXY=1 node scripts/fetch-fonts.mjs   (the env var only matters behind a proxy)
  */
 import { mkdir, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
@@ -21,8 +22,8 @@ const UA =
 const HREF =
   'https://fonts.googleapis.com/css2?' +
   [
-    'family=Syne:wght@600..800',
-    'family=Inter:wght@300..600',
+    'family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,200..800',
+    'family=DM+Sans:opsz,wght@9..40,300..700',
     'family=Instrument+Serif:ital@0;1',
     'family=JetBrains+Mono:wght@400..500',
   ].join('&') +

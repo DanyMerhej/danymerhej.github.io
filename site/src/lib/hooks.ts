@@ -1,43 +1,7 @@
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
-
-export type Theme = 'dark' | 'light';
-
-const STORAGE_KEY = 'dm-theme';
-
-/**
- * One theme value shared by every consumer, so the header and the menu can
- * never drift apart.
- */
-const themeStore = {
-  listeners: new Set<() => void>(),
-
-  get(): Theme {
-    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
-  },
-
-  subscribe(listener: () => void) {
-    themeStore.listeners.add(listener);
-    return () => themeStore.listeners.delete(listener);
-  },
-
-  toggle() {
-    const next: Theme = themeStore.get() === 'dark' ? 'light' : 'dark';
-    const root = document.documentElement;
-    root.classList.toggle('dark', next === 'dark');
-    root.classList.toggle('light', next === 'light');
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* private mode; the class is still applied */
-    }
-    themeStore.listeners.forEach((l) => l());
-  },
-};
-
-export function useTheme(): [Theme, () => void] {
-  const theme = useSyncExternalStore(themeStore.subscribe, themeStore.get, () => 'light' as Theme);
-  return [theme, themeStore.toggle];
-}
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { World } from '../data/site';
+import { pauseScroll } from './smooth';
+import { useWorldClaim } from './world';
 
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() =>
@@ -57,10 +21,10 @@ export function useMediaQuery(query: string): boolean {
 
 /** True on devices with a real pointer, used to gate hover-only flourishes. */
 export function useFinePointer(): boolean {
-  return useMediaQuery('(pointer: fine)');
+  return useMediaQuery('(hover: hover) and (pointer: fine)');
 }
 
-/** Locks body scroll while an overlay is open. */
+/** Locks page scroll while an overlay is open. */
 export function useScrollLock(locked: boolean): void {
   useEffect(() => {
     if (!locked) return;
@@ -68,72 +32,23 @@ export function useScrollLock(locked: boolean): void {
     const scrollbar = window.innerWidth - document.documentElement.clientWidth;
     document.body.style.overflow = 'hidden';
     if (scrollbar > 0) document.body.style.paddingRight = `${scrollbar}px`;
+    pauseScroll(true);
     return () => {
       document.body.style.overflow = previous;
       document.body.style.paddingRight = '';
+      pauseScroll(false);
     };
   }, [locked]);
-}
-
-/* ------------------------------------------------------------------ */
-/* Chapter colour                                                      */
-/* ------------------------------------------------------------------ */
-
-const INK_LIGHT = '18 17 15';
-const INK_DARK = '243 240 233';
-
-/** '#C6F94E' -> '198 249 78', the form CSS custom properties want. */
-export function hexToTriple(hex: string): string {
-  const h = hex.replace('#', '');
-  const full = h.length === 3 ? h.split('').map((c) => c + c).join('') : h;
-  const n = parseInt(full, 16);
-  return `${(n >> 16) & 255} ${(n >> 8) & 255} ${n & 255}`;
-}
-
-/**
- * Drives the page's `--hue`. Each chapter claims the colour while it owns the
- * viewport; when none does, the page falls back to ink.
- *
- * Claims are stacked rather than toggled, so two chapters overlapping mid
- * scroll cannot leave the page stuck on the colour of the one that left last.
- */
-const hueStack: { id: string; triple: string }[] = [];
-
-function applyHue() {
-  const top = hueStack[hueStack.length - 1];
-  const fallback = document.documentElement.classList.contains('dark') ? INK_DARK : INK_LIGHT;
-  document.documentElement.style.setProperty('--hue', top ? top.triple : fallback);
-}
-
-export function useHueClaim(id: string, hex: string, active: boolean): void {
-  useEffect(() => {
-    if (!active) return;
-    const triple = hexToTriple(hex);
-    hueStack.push({ id, triple });
-    applyHue();
-    return () => {
-      const i = hueStack.findIndex((c) => c.id === id);
-      if (i !== -1) hueStack.splice(i, 1);
-      applyHue();
-    };
-  }, [id, hex, active]);
-}
-
-/** Re-applies the ink fallback when the theme flips with no chapter in view. */
-export function useHueThemeSync(theme: Theme): void {
-  useEffect(() => {
-    applyHue();
-  }, [theme]);
 }
 
 /* ------------------------------------------------------------------ */
 /* Viewport observation                                                */
 /* ------------------------------------------------------------------ */
 
-/** True while the element covers the middle band of the viewport. */
+/** True while the element crosses the band in the middle of the viewport. */
 export function useInCentre<T extends HTMLElement>(
   ref: React.RefObject<T>,
-  margin = '-45% 0px -45% 0px',
+  margin = '-49% 0px -49% 0px',
 ): boolean {
   const [inside, setInside] = useState(false);
 
@@ -150,6 +65,30 @@ export function useInCentre<T extends HTMLElement>(
   return inside;
 }
 
+/** True while any part of the element is on screen (plus a margin), for pausing loops. */
+export function useOnScreen<T extends Element>(ref: React.RefObject<T>, margin = '120px'): boolean {
+  const [on, setOn] = useState(false);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(([entry]) => setOn(entry.isIntersecting), {
+      rootMargin: margin,
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [ref, margin]);
+
+  return on;
+}
+
+/** Paints the page in `world` while the element holds the middle of the screen. */
+export function useWorld<T extends HTMLElement>(ref: React.RefObject<T>, id: string, world: World): boolean {
+  const centred = useInCentre(ref);
+  useWorldClaim(id, world, centred);
+  return centred;
+}
+
 /** Tracks which registered section is currently in view. */
 export function useActiveSection(ids: string[]): string {
   const [active, setActive] = useState(ids[0] ?? '');
@@ -157,12 +96,11 @@ export function useActiveSection(ids: string[]): string {
   useEffect(() => {
     const observer = new IntersectionObserver(
       (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visible) setActive(visible.target.id);
+        entries.forEach((e) => {
+          if (e.isIntersecting) setActive(e.target.id);
+        });
       },
-      { rootMargin: '-40% 0px -40% 0px', threshold: [0, 0.2, 0.5, 1] },
+      { rootMargin: '-49% 0px -49% 0px' },
     );
 
     ids.forEach((id) => {
@@ -182,7 +120,7 @@ export function useActiveSection(ids: string[]): string {
 const INTRO_KEY = 'dm-intro-seen';
 
 /**
- * The opening curtain plays once per browser session. Coming back from a
+ * The opening loader plays once per browser session. Coming back from a
  * project link should not replay it.
  */
 export function useIntro(): [boolean, () => void] {
@@ -210,11 +148,10 @@ export function useIntro(): [boolean, () => void] {
 /**
  * Makes an overlay behave like a page for the device back button.
  *
- * Without this, opening a project write-up changes React state only. The
- * browser has no idea anything happened, so Android's back gesture leaves the
- * site altogether while the overlay is still on screen. Pushing a history entry
- * on open, and closing on popstate, makes back mean "close this" the way a
- * visitor expects.
+ * Without this, opening the index changes React state only. The browser has no
+ * idea anything happened, so Android's back gesture leaves the site altogether
+ * while the overlay is still on screen. Pushing a history entry on open, and
+ * closing on popstate, makes back mean "close this" the way a visitor expects.
  *
  * `close` is held in a ref so an inline arrow function in the parent cannot
  * retrigger the effect and stack up duplicate history entries.
@@ -231,7 +168,6 @@ export function useOverlayHistory(open: boolean, close: () => void): void {
     pushed.current = true;
 
     const onPop = () => {
-      // The entry is already gone; just mirror it in state.
       pushed.current = false;
       closeRef.current();
     };
@@ -239,26 +175,10 @@ export function useOverlayHistory(open: boolean, close: () => void): void {
     window.addEventListener('popstate', onPop);
     return () => {
       window.removeEventListener('popstate', onPop);
-      // Closed from the UI rather than from back: drop the entry we added, so
-      // back does not have to be pressed twice to leave the page.
       if (pushed.current) {
         pushed.current = false;
         window.history.back();
       }
     };
   }, [open]);
-}
-
-/** Value that lags behind the source, for readouts that should feel mechanical. */
-export function useDebounced<T>(value: T, ms: number): T {
-  const [held, setHeld] = useState(value);
-  const timer = useRef<number>();
-
-  useEffect(() => {
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(() => setHeld(value), ms);
-    return () => window.clearTimeout(timer.current);
-  }, [value, ms]);
-
-  return held;
 }

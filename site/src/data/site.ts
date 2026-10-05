@@ -1,5 +1,18 @@
 export type Status = 'live' | 'building' | 'early';
 
+/**
+ * The colours a section or product paints the whole page with while it holds
+ * the middle of the screen. Hex, so they read the way a designer writes them.
+ */
+export interface World {
+  bg: string;
+  fg: string;
+  accent: string;
+}
+
+/** Which playable toy sits on the back of the product's phone. */
+export type DemoId = 'split' | 'event' | 'salon' | 'rent' | 'stack';
+
 export interface ProjectLink {
   label: string;
   href: string;
@@ -25,6 +38,15 @@ export interface Project {
   hues: [string, string];
   /** Brand mark in public/brand, shown on the card and in the dialog. */
   logo: string;
+  /** A product I own and run, or a build for a brand. Products lead the page. */
+  kind: 'product' | 'build';
+  /** Short category shown as a chip: SaaS, Mobile game, Shopify storefront... */
+  category: string;
+  /** The colour world the page turns into for this project. */
+  world: World;
+  /** Real screenshots in public/shots, captured by scripts/capture-shots.mjs. */
+  shots?: { mobile?: string; desktop?: string };
+  demo?: DemoId;
 }
 
 export const profile = {
@@ -47,8 +69,16 @@ export const profile = {
   instagram: 'https://instagram.com/danny_merhej',
   instagramHandle: '@danny_merhej',
   portrait: '/brand/portrait.webp',
+  /** The opening line. Products first: they are the work with my name on it. */
+  hero: 'I design, build and ship my own products, end to end.',
+  heroSub:
+    'Architecture, AI, backend, interface, app stores. By day I lead the team behind IRIS, an insurance ERP that 30+ insurers run on.',
+  /** The word that keeps changing in the hero's "I build ..." line. */
+  builds: ['AI apps', 'SaaS platforms', 'idle games', 'Shopify stores', 'smart homes', 'insurance ERPs'],
   intro:
     'I lead the team behind IRIS, an enterprise insurance ERP running at 30+ insurance companies across the Middle East, Africa and Europe. Outside of that, I design and ship my own products end to end: architecture, AI, backend, UI, app stores.',
+  /** A short handle for each summary paragraph, so the long copy can be scanned. */
+  summaryHeads: ['Where it started', 'What the day job taught me', 'The other half', 'Off the screen'],
   summary: [
     'Seven years ago I walked into Pixel Software Solutions as an intern. Today I lead the team that builds IRIS, an insurance ERP that more than 30 companies across three continents run their business on: policy administration, underwriting, claims, accounting, collections, reinsurance, reporting, broker portals and the integrations that tie them to the outside world.',
     'That work taught me the unglamorous half of engineering. Regulated domains, million-row tables, migrations that cannot fail, and clients who need a straight answer today. I own the technical conversation with them from the first requirement to the release note.',
@@ -72,6 +102,19 @@ export const metrics = [
   { value: 30, suffix: '+', label: 'insurance companies on IRIS', sub: 'Middle East · Africa · Europe' },
   { value: 1000, suffix: '+', label: 'tickets & requests delivered', sub: '100% on-time on key milestones' },
   { value: 1, suffix: 'TB+', label: 'production data tuned', sub: 'query time down 30%' },
+];
+
+/** The parts of IRIS my team builds, as listed in the role description. */
+export const irisModules = [
+  'Policy administration',
+  'Underwriting',
+  'Claims',
+  'Accounting',
+  'Collections',
+  'Reinsurance',
+  'Reporting',
+  'Broker portals',
+  'Integrations',
 ];
 
 export const impactStats = [
@@ -155,6 +198,11 @@ export const projects: Project[] = [
     year: '2024 to now',
     role: 'Sole architect & engineer',
     logo: '/brand/splittyy.webp',
+    kind: 'product',
+    category: 'AI · SaaS · Android',
+    world: { bg: '#C6F94E', fg: '#0E1A10', accent: '#0B7A5C' },
+    shots: { mobile: '/shots/splittyy-mobile.webp', desktop: '/shots/splittyy-desktop.webp' },
+    demo: 'split',
     hues: ['#C6F94E', '#39D0A5'],
     highlights: [
       'AI receipt scanning: Gemini extracts items, prices and totals straight from a photo, with no manual entry',
@@ -203,6 +251,11 @@ export const projects: Project[] = [
     year: '2025 to now',
     role: 'Architect & engineer',
     logo: '/brand/eventyy.webp',
+    kind: 'product',
+    category: 'Multi-tenant SaaS',
+    world: { bg: '#F0A6E0', fg: '#2A0B2A', accent: '#2A55D9' },
+    shots: { mobile: '/shots/eventyy-mobile.webp', desktop: '/shots/eventyy-desktop.webp' },
+    demo: 'event',
     hues: ['#E879C9', '#6BC4FF'],
     highlights: [
       'One root object, the Event, carrying clients, suppliers, media, finance, timeline and live event-day state',
@@ -247,6 +300,11 @@ export const projects: Project[] = [
     year: '2025 to now',
     role: 'Architect & engineer',
     logo: '/brand/salonyy.webp',
+    kind: 'product',
+    category: 'SaaS · iOS · Android',
+    world: { bg: '#FFB86B', fg: '#3A1606', accent: '#C2185B' },
+    shots: { mobile: '/shots/salonyy-mobile.webp', desktop: '/shots/salonyy-desktop.webp' },
+    demo: 'salon',
     hues: ['#FF7AB6', '#FFB86B'],
     highlights: [
       'Multi-branch with 7 roles and a granular permission matrix',
@@ -290,6 +348,11 @@ export const projects: Project[] = [
     year: '2026 to now',
     role: 'Architect & engineer',
     logo: '/brand/rentyy.webp',
+    kind: 'product',
+    category: 'Multi-tenant SaaS',
+    world: { bg: '#EE6A3F', fg: '#1A0702', accent: '#FFE2C8' },
+    shots: { mobile: '/shots/rentyy-mobile.webp', desktop: '/shots/rentyy-desktop.webp' },
+    demo: 'rent',
     hues: ['#E8562A', '#F0A868'],
     highlights: [
       'The fleet with its photos, papers and rate plans, where registration, insurance and inspection expiry watch themselves',
@@ -336,6 +399,10 @@ export const projects: Project[] = [
     year: '2025 to now',
     role: 'Designer & engineer',
     logo: '/brand/stackup.webp',
+    kind: 'product',
+    category: 'Mobile game',
+    world: { bg: '#FFD166', fg: '#2A1500', accent: '#D9480F' },
+    demo: 'stack',
     hues: ['#FFD166', '#FF7A45'],
     highlights: [
       '15 level-gated businesses with payback times ranging from seconds to days',
@@ -370,6 +437,10 @@ export const projects: Project[] = [
     year: '2025',
     role: 'Design & build',
     logo: '/brand/alpha.webp',
+    kind: 'build',
+    category: 'Shopify storefront',
+    world: { bg: '#1A1414', fg: '#FFF1EC', accent: '#D7FF3A' },
+    shots: { mobile: '/shots/alpha-mobile.webp', desktop: '/shots/alpha-desktop.webp' },
     hues: ['#FF4D4D', '#FFB020'],
     highlights: [
       'A custom "Alpha" design layer built on Shopify Dawn 15.5 as a foundation',
@@ -393,6 +464,10 @@ export const projects: Project[] = [
     year: '2025 to now',
     role: 'Design & build, client project',
     logo: '/brand/hotw.webp',
+    kind: 'build',
+    category: 'Shopify storefront',
+    world: { bg: '#2A2416', fg: '#F6ECD2', accent: '#C9A227' },
+    shots: { mobile: '/shots/hotw-mobile.webp', desktop: '/shots/hotw-desktop.webp' },
     hues: ['#C9A227', '#8E7B3F'],
     highlights: [
       'An "Aged Patina" luxury design system built on Shopify Craft',
@@ -423,6 +498,10 @@ export const projects: Project[] = [
     year: '2026 to now',
     role: 'Design & build, client project',
     logo: '/brand/elastick.webp',
+    kind: 'build',
+    category: 'Shopify storefront',
+    world: { bg: '#193B74', fg: '#F2F6FF', accent: '#F4721D' },
+    shots: { mobile: '/shots/elastick-mobile.webp', desktop: '/shots/elastick-desktop.webp' },
     hues: ['#F4721D', '#193B74'],
     highlights: [
       "A bespoke design layer over Shopify Horizon, in the brand's navy and orange",
@@ -454,6 +533,10 @@ export const projects: Project[] = [
     year: '2026 to now',
     role: 'Design & build, client project',
     logo: '/brand/flow.webp',
+    kind: 'build',
+    category: 'Shopify storefront',
+    world: { bg: '#1B2FE0', fg: '#F3F5FF', accent: '#FF5A1F' },
+    shots: { mobile: '/shots/flow-mobile.webp', desktop: '/shots/flow-desktop.webp' },
     hues: ['#1B2FE0', '#FF5A1F'],
     highlights: [
       "The label's electric blue carried through the colour schemes, with buttons that turn orange under the cursor",
@@ -484,6 +567,10 @@ export const projects: Project[] = [
     year: '2026',
     role: 'Design & build, client project',
     logo: '/brand/bits.webp',
+    kind: 'build',
+    category: 'Website',
+    world: { bg: '#EBDCC0', fg: '#2A2012', accent: '#8A6424' },
+    shots: { mobile: '/shots/bits-mobile.webp', desktop: '/shots/bits-desktop.webp' },
     hues: ['#C2984E', '#EBDCC0'],
     highlights: [
       'One scrolling journey through five worlds: photography, stations, games, entertainment and the small details',
@@ -693,11 +780,30 @@ export const statusLabel: Record<Status, string> = {
   early: 'Early build',
 };
 
-/** The running order of the page, used by the contents list and the menu. */
+/** The running order of the page, used by the dock, the index and the header. */
 export const chapters = [
-  { id: 'ledger', label: 'The day job' },
-  { id: 'works', label: 'The work' },
-  { id: 'craft', label: 'What I do' },
+  { id: 'top', label: 'Hello' },
+  { id: 'products', label: 'My products' },
+  { id: 'builds', label: 'Client builds' },
+  { id: 'career', label: 'The day job' },
+  { id: 'skills', label: 'What I do' },
   { id: 'beyond', label: 'Beyond code' },
-  { id: 'colophon', label: 'About & contact' },
+  { id: 'about', label: 'About' },
+  { id: 'contact', label: 'Contact' },
 ];
+
+/**
+ * The colour world each section turns the page into. Products and builds bring
+ * their own, from the project data.
+ */
+export const worlds = {
+  night: { bg: '#110E1C', fg: '#FFF6EA', accent: '#C6F94E' },
+  lilac: { bg: '#E4DCFF', fg: '#1B1433', accent: '#5B3DF5' },
+  ink: { bg: '#15121D', fg: '#FBF4EA', accent: '#FFB020' },
+  cream: { bg: '#FFF4E4', fg: '#1E1730', accent: '#E8562A' },
+  mint: { bg: '#CFF3E0', fg: '#0D2A1E', accent: '#13795B' },
+  midnight: { bg: '#0D1430', fg: '#EAF1FF', accent: '#FFC861' },
+  sky: { bg: '#DCE8FF', fg: '#0D1A3A', accent: '#2F5BD3' },
+  peach: { bg: '#FFE3D3', fg: '#2B1410', accent: '#D6336C' },
+  orange: { bg: '#FF6B2C', fg: '#1C0A02', accent: '#1C0A02' },
+} satisfies Record<string, World>;

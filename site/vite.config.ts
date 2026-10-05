@@ -1,8 +1,67 @@
 import { defineConfig } from 'vite';
+import type { Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
+import { projects } from './src/data/site';
+
+const ORIGIN = 'https://dannymerhej.com';
+
+const escape = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+/**
+ * Gives every project a real page at /work/<id>/ in the build: the same app,
+ * but with the project's own title, description and canonical address in the
+ * HTML, so a shared link previews as that project and loads with a 200 rather
+ * than as a 404. Also writes the 404 page (the app, which shows the home page
+ * for any address it does not know) and a sitemap listing every page.
+ */
+function projectPages(): Plugin {
+  return {
+    name: 'project-pages',
+    apply: 'build',
+    // After Vite has written index.html into the bundle.
+    enforce: 'post',
+    generateBundle(_, bundle) {
+      const index = bundle['index.html'];
+      if (!index || index.type !== 'asset') return;
+      const html = String(index.source);
+
+      for (const p of projects) {
+        const url = `${ORIGIN}/work/${p.id}/`;
+        const title = escape(`${p.name} | Danny Merhej`);
+        const desc = escape(`${p.tagline}. ${p.blurb}`);
+        const page = html
+          .replace(/<title>[^<]*<\/title>/, `<title>${title}</title>`)
+          .replace(/(<meta\s+name="description"\s+content=")[^"]*(")/, `$1${desc}$2`)
+          .replace(/(<meta\s+property="og:title"\s+content=")[^"]*(")/, `$1${title}$2`)
+          .replace(/(<meta\s+property="og:description"\s+content=")[^"]*(")/, `$1${desc}$2`)
+          .replace(/(<meta\s+name="twitter:title"\s+content=")[^"]*(")/, `$1${title}$2`)
+          .replace(/(<meta\s+name="twitter:description"\s+content=")[^"]*(")/, `$1${desc}$2`)
+          .replace(/(<meta\s+property="og:url"\s+content=")[^"]*(")/, `$1${url}$2`)
+          .replace(/(<link\s+rel="canonical"\s+href=")[^"]*(")/, `$1${url}$2`);
+        this.emitFile({ type: 'asset', fileName: `work/${p.id}/index.html`, source: page });
+      }
+
+      this.emitFile({ type: 'asset', fileName: '404.html', source: html });
+
+      const urls = [`${ORIGIN}/`, ...projects.map((p) => `${ORIGIN}/work/${p.id}/`)];
+      const sitemap = [
+        '<?xml version="1.0" encoding="UTF-8"?>',
+        '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+        ...urls.map(
+          (u, i) =>
+            `  <url>\n    <loc>${u}</loc>\n    <changefreq>monthly</changefreq>\n    <priority>${i === 0 ? '1.0' : '0.8'}</priority>\n  </url>`,
+        ),
+        '</urlset>',
+        '',
+      ].join('\n');
+      this.emitFile({ type: 'asset', fileName: 'sitemap.xml', source: sitemap });
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), projectPages()],
   base: '/',
   build: {
     outDir: 'dist',
