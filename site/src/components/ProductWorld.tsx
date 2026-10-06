@@ -33,7 +33,7 @@ export function ProductWorld({
     <article
       ref={ref}
       id={`work-${project.id}`}
-      className="relative overflow-clip py-20 md:py-32"
+      className="relative overflow-clip py-24 md:py-36"
       aria-labelledby={`title-${project.id}`}
     >
       {/* The product number, huge and outlined, drifting across behind

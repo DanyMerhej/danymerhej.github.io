@@ -100,7 +100,7 @@ export function Builds({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
   }, [pinned]);
 
   const header = (
-    <div className="gutter shrink-0 pt-20 md:pt-24">
+    <div className="gutter shrink-0 pt-28 md:pt-40">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="eyebrow">Client builds</p>
@@ -136,15 +136,7 @@ export function Builds({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
   }
 
   return (
-    <section
-      id="builds"
-      // The section paints its own dark stage, so it carries its own colours
-      // too (text-fg resolves them here rather than inheriting the page's).
-      // Left to the page's, the heading was the previous section's dark ink
-      // on this dark stage, barely visible until the page arrived here.
-      className="relative text-fg"
-      style={{ '--bg': worlds.ink.bg, '--fg': worlds.ink.fg, '--accent': worlds.ink.accent } as CSSProperties}
-    >
+    <section id="builds" className="relative">
       <div ref={pin} style={{ height: `calc(100svh + ${dist}px)`, viewTimelineName: '--builds' } as CSSProperties}>
         <div className="sticky top-0 isolate flex h-[100svh] flex-col overflow-hidden">
           {/* The brand's colour, cross-faded on one layer: a single repaint. */}

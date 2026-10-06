@@ -214,7 +214,7 @@ function VentureSpread({ venture, index }: { venture: Venture; index: number }) 
   return (
     <article
       ref={ref}
-      className="py-20 md:py-28"
+      className="py-24 md:py-36"
       // The lens follows this element's passage through the screen (index.css, .sd-aperture).
       style={index === 0 ? ({ viewTimelineName: '--lens' } as CSSProperties) : undefined}
     >

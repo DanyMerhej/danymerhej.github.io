@@ -274,7 +274,7 @@ function NextBand({ next, onOpen }: { next: Project; onOpen: (p: Project, x: num
       ref={ref}
       type="button"
       onClick={(e) => onOpen(next, e.clientX, e.clientY)}
-      className="group block w-full pb-36 pt-24 text-left md:pb-28"
+      className="group block w-full pb-36 pt-24 text-left md:pb-28 md:pt-36"
       data-cursor="Next"
     >
       <div className="gutter">

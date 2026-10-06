@@ -23,7 +23,7 @@ export function Products({ onOpen }: { onOpen: (p: Project, x: number, y: number
 
   return (
     <section id="products" className="relative scroll-mt-0">
-      <div ref={intro} className="pb-10 pt-24 md:pt-36">
+      <div ref={intro} className="pb-24 pt-24 md:pb-36 md:pt-36">
         <div className="gutter">
           <p className="eyebrow">My products</p>
           <Mask as="h2" className="display h-section mt-6 max-w-5xl">

@@ -104,11 +104,17 @@ export function claimWorld(id: string, world: World): () => void {
  * Normally an IntersectionObserver keeps each claim up to date; the registry
  * exists so a page change can settle every claim at once, before the browser
  * takes its picture of the new page, rather than a frame later.
+ *
+ * Each section is also a band of its own colour: it paints its world's
+ * background and carries its world's ink and accent (index.css, [data-band]),
+ * so its text is never caught in the wrong colours while the page changes
+ * world. Where two bands meet they melt into each other, which needs each one
+ * to know its neighbours' colours (paintSeams, below).
  */
-const sections = new Map<Element, (inside: boolean) => void>();
+const sections = new Map<HTMLElement, { sync: (inside: boolean) => void; world: World }>();
 
-/** Claims `world` for as long as `el` crosses the centre line. Returns the cleanup. */
-export function observeWorld(el: Element, id: string, world: World): () => void {
+/** Claims `world` for as long as `el` crosses the centre line, and paints `el` in it. Returns the cleanup. */
+export function observeWorld(el: HTMLElement, id: string, world: World): () => void {
   let release: (() => void) | null = null;
   const sync = (inside: boolean) => {
     if (inside && !release) release = claimWorld(id, world);
@@ -117,22 +123,63 @@ export function observeWorld(el: Element, id: string, world: World): () => void 
       release = null;
     }
   };
-  sections.set(el, sync);
+  sections.set(el, { sync, world });
+  el.dataset.band = '';
+  el.style.setProperty('--bg', world.bg);
+  el.style.setProperty('--fg', world.fg);
+  el.style.setProperty('--accent', world.accent);
+  queueSeams();
+
   const io = new IntersectionObserver(([e]) => sync(e.isIntersecting), { rootMargin: '-49% 0px -49% 0px' });
   io.observe(el);
   return () => {
     io.disconnect();
     sections.delete(el);
+    delete el.dataset.band;
+    ['--bg', '--fg', '--accent', '--prev-bg', '--next-bg'].forEach((v) => el.style.removeProperty(v));
     sync(false);
+    queueSeams();
   };
 }
 
 /** Brings every claim up to date now, from layout. Used once per page change. */
 export function settleWorlds(): void {
   const mid = window.innerHeight / 2;
-  sections.forEach((sync, el) => {
+  sections.forEach(({ sync }, el) => {
     const r = el.getBoundingClientRect();
     sync(r.height > 0 && r.top <= mid && r.bottom >= mid);
+  });
+  // The page just changed: the bands on show, and so their neighbours, did too.
+  queueSeams();
+}
+
+/*
+ * Every band learns the colours of the bands above and below it on the page,
+ * for the blend at each join. Batched to the end of the current task, so a
+ * page full of sections mounting at once is one pass, and a page change has
+ * its joins in place before the browser takes its picture of it.
+ */
+let seamsQueued = false;
+function queueSeams() {
+  if (seamsQueued) return;
+  seamsQueued = true;
+  queueMicrotask(() => {
+    seamsQueued = false;
+    paintSeams();
+  });
+}
+
+function paintSeams() {
+  // Only bands on show: the home page's stay mounted, hidden, behind a project.
+  const bands = [...sections.entries()]
+    .filter(([el]) => el.isConnected && el.getClientRects().length > 0)
+    .sort(([a], [b]) => (a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+  bands.forEach(([el], i) => {
+    // Above the first band is the page's own colour, e.g. a project's.
+    el.style.setProperty('--prev-bg', (bands[i - 1]?.[1].world ?? base).bg);
+    const next = bands[i + 1]?.[1].world;
+    if (next) el.style.setProperty('--next-bg', next.bg);
+    else el.style.removeProperty('--next-bg');
   });
 }
 
