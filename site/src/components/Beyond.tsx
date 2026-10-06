@@ -243,26 +243,65 @@ function VentureSpread({ venture, index }: { venture: Venture; index: number }) 
   );
 }
 
+/*
+ * The lens's opening: a regular octagon, flat edge at the top. Its corners,
+ * on a circle of radius 1, for an opening as wide as the lens.
+ */
+const SIDES = 8;
+const corner = (i: number): [number, number] => {
+  const a = ((i % SIDES) * 2 * Math.PI) / SIDES + Math.PI / SIDES - Math.PI / 2;
+  return [Math.cos(a), Math.sin(a)];
+};
+const OCTAGON = `polygon(${Array.from({ length: SIDES }, (_, i) => {
+  const [x, y] = corner(i);
+  return `${(50 + 50 * x).toFixed(3)}% ${(50 + 50 * y).toFixed(3)}%`;
+}).join(', ')})`;
+/** How wide the opening is, as a share of the lens: shut, and open (index.css, iris-open). */
+const SHUT = 0.1;
+const OPEN = 0.74;
+
 /**
- * A lens whose iris opens as you scroll to it. Each blade covers the lens down
- * to the edge of the opening and slides back to widen it: transforms only,
+ * A lens whose iris opens as you scroll to it.
+ *
+ * Drawn from the geometry rather than from overlapping blades: the opening is
+ * a regular octagon of light, and each seam between blades runs from one of
+ * its corners straight out to the rim, along the side it ends. Overlapping
+ * blades could never all lie on top of the next one round, so one seam always
+ * went missing and another showed twice; this is symmetric by construction.
+ * The opening scales and the seams slide with its corners, all transforms
  * driven by the scroll on the compositor. Where scroll timelines are missing
  * the lens simply rests open.
  */
 function Aperture() {
-  const blades = 8;
   return (
     <div className="relative aspect-square w-[min(78vw,380px)] rounded-full bg-[#0D1A3A] p-[6%] shadow-[0_40px_80px_-30px_rgba(13,26,58,0.8)]">
-      <div className="relative h-full w-full overflow-hidden rounded-full bg-gradient-to-br from-[#8FB8FF] via-[#C7D8F5] to-[#FFD9B0]">
+      <div className="relative h-full w-full overflow-hidden rounded-full bg-[#0D1A3A] [container-type:inline-size]">
         <div className="sd-aperture absolute inset-0">
-          {Array.from({ length: blades }).map((_, i) => (
-            <div key={i} className="absolute inset-0" style={{ transform: `rotate(${(360 / blades) * i}deg)` }}>
-              <div
-                className="sd-blade absolute -left-1/2 -top-full h-[146%] w-[200%] origin-bottom border-b-2 border-[#22345F] bg-[#0D1A3A]"
-                style={{ transform: 'translate3d(0, -23.3%, 0) rotate(14deg)' }}
+          <div
+            className="sd-iris absolute inset-0 bg-gradient-to-br from-[#8FB8FF] via-[#C7D8F5] to-[#FFD9B0]"
+            style={{ clipPath: OCTAGON, transform: `scale(${OPEN})` }}
+          />
+          {Array.from({ length: SIDES }).map((_, i) => {
+            // The seam leaves corner i+1 in the direction of the side that ends there.
+            const [ax, ay] = corner(i);
+            const [bx, by] = corner(i + 1);
+            const angle = (Math.atan2(by - ay, bx - ax) * 180) / Math.PI;
+            const at = (k: number) => `${(bx * k * 50).toFixed(3)}cqw, ${(by * k * 50).toFixed(3)}cqw`;
+            return (
+              <span
+                key={i}
+                aria-hidden="true"
+                className="sd-seam absolute left-1/2 top-1/2 -mt-px h-[2px] w-[110cqw] origin-left bg-[#2A3F70]"
+                style={
+                  {
+                    '--shut': `translate(${at(SHUT)}) rotate(${angle.toFixed(3)}deg)`,
+                    '--open': `translate(${at(OPEN)}) rotate(${angle.toFixed(3)}deg)`,
+                    transform: `translate(${at(OPEN)}) rotate(${angle.toFixed(3)}deg)`,
+                  } as CSSProperties
+                }
               />
-            </div>
-          ))}
+            );
+          })}
         </div>
         <div className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_0_0_10px_#0D1A3A]" />
       </div>

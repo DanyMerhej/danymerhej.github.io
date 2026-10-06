@@ -136,7 +136,15 @@ export function Builds({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
   }
 
   return (
-    <section id="builds" className="relative">
+    <section
+      id="builds"
+      // The section paints its own dark stage, so it carries its own colours
+      // too (text-fg resolves them here rather than inheriting the page's).
+      // Left to the page's, the heading was the previous section's dark ink
+      // on this dark stage, barely visible until the page arrived here.
+      className="relative text-fg"
+      style={{ '--bg': worlds.ink.bg, '--fg': worlds.ink.fg, '--accent': worlds.ink.accent } as CSSProperties}
+    >
       <div ref={pin} style={{ height: `calc(100svh + ${dist}px)`, viewTimelineName: '--builds' } as CSSProperties}>
         <div className="sticky top-0 isolate flex h-[100svh] flex-col overflow-hidden">
           {/* The brand's colour, cross-faded on one layer: a single repaint. */}

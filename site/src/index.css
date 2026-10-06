@@ -481,8 +481,13 @@
       animation-timeline: --lens;
       animation-range: cover 0% cover 100%;
     }
-    .sd-blade {
-      animation: blade-open linear both;
+    .sd-iris {
+      animation: iris-open linear both;
+      animation-timeline: --lens;
+      animation-range: cover 10% cover 48%;
+    }
+    .sd-seam {
+      animation: seam-open linear both;
       animation-timeline: --lens;
       animation-range: cover 10% cover 48%;
     }
@@ -551,12 +556,22 @@
     transform: rotate(70deg);
   }
 }
-@keyframes blade-open {
+/* Beyond.tsx, Aperture: SHUT and OPEN there are the two scales here. */
+@keyframes iris-open {
   from {
-    transform: translate3d(0, 0, 0) rotate(14deg);
+    transform: scale(0.1);
   }
   to {
-    transform: translate3d(0, -23.3%, 0) rotate(14deg);
+    transform: scale(0.74);
+  }
+}
+/* Each seam's two transforms come from its own element (--shut, --open). */
+@keyframes seam-open {
+  from {
+    transform: var(--shut);
+  }
+  to {
+    transform: var(--open);
   }
 }
 @keyframes word-light {
