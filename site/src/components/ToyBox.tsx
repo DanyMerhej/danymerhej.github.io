@@ -345,9 +345,6 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
   }, [started]);
 
   const physics = !reduced;
-  // On a phone a vertical swipe over the pile scrolls the page; sideways
-  // throws, taps and tilting all still work.
-  const grabAction = coarse ? 'pan-y' : 'none';
   const label = !started
     ? 'incoming…'
     : coarse && sensed && motion === 'on'
@@ -402,7 +399,9 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
               }}
               className={`${physics ? 'absolute left-0 top-0 opacity-0' : 'relative'} flex h-[74px] w-[74px] cursor-grab items-center justify-center overflow-hidden rounded-[22px] sm:h-[104px] sm:w-[104px] sm:rounded-[30px]`}
               style={{
-                touchAction: grabAction,
+                // A finger on a mark holds the mark, in every direction; only
+                // the empty space in the box (pan-y) scrolls the page.
+                touchAction: 'none',
                 background: 'linear-gradient(150deg, #1D1B24, #0B0A10)',
                 boxShadow: `0 14px 30px -12px ${p.hues[0]}aa, inset 0 0 0 2px ${p.hues[0]}55`,
               }}
@@ -425,7 +424,7 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
               aria-hidden="true"
               className={`${physics ? 'absolute left-0 top-0 opacity-0' : 'relative'} flex h-[42px] cursor-grab select-none items-center rounded-full px-5 font-display text-[17px] font-bold sm:h-[54px] sm:px-7 sm:text-[22px]`}
               style={{
-                touchAction: grabAction,
+                touchAction: 'none',
                 background: projects[i % projects.length].hues[0],
                 color: '#14101F',
               }}
