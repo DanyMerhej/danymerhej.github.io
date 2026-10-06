@@ -1,5 +1,5 @@
 import { useReducedMotion } from 'framer-motion';
-import { Hand, RotateCcw, Smartphone, Sparkles } from 'lucide-react';
+import { Hand, RotateCcw, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { Project } from '../data/site';
 import { projects } from '../data/site';
@@ -11,8 +11,12 @@ const WORDS = ['AI', 'SaaS', 'Shopify', 'RLS', 'Android', 'iOS', 'Game', 'Edge']
 
 /**
  * Every project's mark as a physical object in a box. Grab one and throw it,
- * shake the box, or on a phone tilt it and let gravity follow. A quick tap on
- * a mark opens its project.
+ * shake the box, and on a phone simply tilt it: gravity follows the phone
+ * whenever the box is on screen, with nothing to switch on. A quick tap on a
+ * mark opens its project.
+ *
+ * iPhones only send the tilt sensor to a page after a tap and a yes, so there
+ * the first tap on the box (or on Shake, or a throw) asks, once.
  *
  * The marks are ordinary DOM elements moved by Matter.js, not a canvas, so they
  * stay crisp, keep their shadows and remain focusable buttons. Only the marks
@@ -22,14 +26,33 @@ const WORDS = ['AI', 'SaaS', 'Shopify', 'RLS', 'Android', 'iOS', 'Game', 'Edge']
 export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) => void }) {
   const box = useRef<HTMLDivElement>(null);
   const nodes = useRef<(HTMLElement | null)[]>([]);
-  const api = useRef<{ shake: () => void; reset: () => void; tilt: (on: boolean) => void } | null>(null);
+  const api = useRef<{ shake: () => void; reset: () => void } | null>(null);
   const reduced = useReducedMotion();
   const coarse = useMediaQuery('(pointer: coarse)');
   const [started, setStarted] = useState(false);
-  const [tilt, setTilt] = useState(false);
-  const wantTilt = useRef(false);
   const openRef = useRef(onOpen);
   openRef.current = onOpen;
+
+  // 'ask' until an iPhone has said yes to motion; 'off' if it said no.
+  const [motion, setMotion] = useState<'ask' | 'on' | 'off'>(() => (motionNeedsPermission() ? 'ask' : 'on'));
+  // Whether real tilt readings are arriving, which is when the box says so.
+  const [sensed, setSensed] = useState(false);
+  const asking = useRef(false);
+  const askMotion = () => {
+    if (motion !== 'ask' || asking.current) return;
+    asking.current = true;
+    const DOE = window.DeviceOrientationEvent as unknown as { requestPermission: () => Promise<string> };
+    DOE.requestPermission()
+      .then((r) => setMotion(r === 'granted' ? 'on' : 'off'))
+      .catch(() => {})
+      .finally(() => {
+        asking.current = false;
+      });
+  };
+  const askRef = useRef(askMotion);
+  askRef.current = askMotion;
+
+  const sensedRef = useRef(() => setSensed(true));
 
   // Start the physics the first time the box comes near the screen.
   useEffect(() => {
@@ -156,6 +179,10 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
           if (moved < 8 && quick && id && e.type === 'pointerup') {
             const p = projects.find((x) => x.id === id);
             if (p) openRef.current(p, e.clientX, e.clientY);
+          } else if (e.type === 'pointerup') {
+            // A throw is a good moment to ask an iPhone for the tilt sensor; a
+            // tap that opens a project is not.
+            askRef.current();
           }
         };
         item.node.addEventListener('pointerdown', down);
@@ -188,14 +215,35 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
       const ro = new ResizeObserver(resize);
       ro.observe(root);
 
-      // Tilt: gravity follows the phone.
+      // Tilt: gravity follows the phone, read only while the box is on screen.
+      // Readings are smoothed, and the pile is woken only by a real change of
+      // angle, so a hand's tremor never keeps the physics running.
+      const tiltable = window.matchMedia('(pointer: coarse)').matches;
+      let sensing = false;
+      let wokeAt = { x: 0, y: 1 };
+      const clamp = (v: number) => Math.max(-1, Math.min(1, v / 40));
       const onTilt = (e: DeviceOrientationEvent) => {
-        const g = Math.max(-1, Math.min(1, (e.gamma ?? 0) / 40));
-        const b = Math.max(-1, Math.min(1, (e.beta ?? 45) / 40));
-        const changed = Math.abs(g - engine.gravity.x) + Math.abs(b - engine.gravity.y) > 0.05;
-        engine.gravity.x = g;
-        engine.gravity.y = b;
-        if (changed) wakeAll();
+        if (e.beta === null || e.gamma === null) return; // no sensor: gravity stays down
+        if (!sensing) {
+          sensing = true;
+          sensedRef.current();
+        }
+        // Into the screen's own axes, whichever way round the phone is held.
+        const angle = window.screen.orientation?.angle ?? 0;
+        const [x, y] =
+          angle === 90
+            ? [e.beta, -e.gamma]
+            : angle === 270 || angle === -90
+              ? [-e.beta, e.gamma]
+              : angle === 180
+                ? [-e.gamma, -e.beta]
+                : [e.gamma, e.beta];
+        engine.gravity.x += (clamp(x) - engine.gravity.x) * 0.25;
+        engine.gravity.y += (clamp(y) - engine.gravity.y) * 0.25;
+        if (Math.abs(engine.gravity.x - wokeAt.x) + Math.abs(engine.gravity.y - wokeAt.y) > 0.06) {
+          wokeAt = { x: engine.gravity.x, y: engine.gravity.y };
+          wakeAll();
+        }
       };
 
       const wakeAll = () => {
@@ -223,19 +271,15 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
           });
           kick();
         },
-        tilt(on) {
-          if (on) window.addEventListener('deviceorientation', onTilt);
-          else {
-            window.removeEventListener('deviceorientation', onTilt);
-            engine.gravity.x = 0;
-            engine.gravity.y = 1;
-          }
-        },
       };
 
       let visible = true;
       const io = new IntersectionObserver(([e]) => {
         visible = e.isIntersecting;
+        if (tiltable) {
+          if (visible) window.addEventListener('deviceorientation', onTilt);
+          else window.removeEventListener('deviceorientation', onTilt);
+        }
         if (visible) kick();
       });
       io.observe(root);
@@ -287,8 +331,6 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
         frame = requestAnimationFrame(loop);
       }
       kick();
-      // Tilt may have been switched on before the physics had loaded.
-      if (wantTilt.current) api.current.tilt(true);
 
       return () => {
         cancelAnimationFrame(frame);
@@ -302,27 +344,17 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
     }
   }, [started]);
 
-  const toggleTilt = async () => {
-    const next = !tilt;
-    if (next) {
-      const DOE = window.DeviceOrientationEvent as unknown as { requestPermission?: () => Promise<string> };
-      if (typeof DOE?.requestPermission === 'function') {
-        try {
-          if ((await DOE.requestPermission()) !== 'granted') return;
-        } catch {
-          return;
-        }
-      }
-    }
-    wantTilt.current = next;
-    api.current?.tilt(next);
-    setTilt(next);
-  };
-
   const physics = !reduced;
-  // On a phone a vertical swipe over the pile scrolls the page (sideways
-  // throws and taps still work); with tilt on, the logos take every gesture.
-  const grabAction = coarse && !tilt ? 'pan-y' : 'none';
+  // On a phone a vertical swipe over the pile scrolls the page; sideways
+  // throws, taps and tilting all still work.
+  const grabAction = coarse ? 'pan-y' : 'none';
+  const label = !started
+    ? 'incoming…'
+    : coarse && sensed && motion === 'on'
+      ? 'tilt your phone'
+      : coarse && motion === 'ask'
+        ? 'tap the box to tilt'
+        : 'grab one';
 
   return (
     <div>
@@ -339,13 +371,16 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
           physics ? 'h-[62svh] max-h-[640px] min-h-[420px]' : 'p-5'
         }`}
         style={{ touchAction: 'pan-y' }}
+        onClick={(e) => {
+          if (!(e.target as Element).closest('[data-vt-logo], [data-pill]')) askMotion();
+        }}
       >
         {physics && (
           <p
             aria-hidden="true"
             className="pointer-events-none absolute inset-x-0 top-1/3 text-center font-display text-[clamp(1.4rem,6vw,2.6rem)] font-bold text-fg/15"
           >
-            {started ? 'grab one' : 'incoming…'}
+            {label}
           </p>
         )}
 
@@ -402,38 +437,17 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
       </div>
 
       {physics && (
-        // Equal columns and labels that never change length, so toggling tilt
-        // cannot push the other buttons around.
-        <div className={`mt-4 grid gap-2 ${coarse ? 'grid-cols-3' : 'grid-cols-2 sm:max-w-md'}`}>
-          <button type="button" onClick={() => api.current?.shake()} className="btn-solid min-h-[2.9rem] gap-2 px-2 text-[15px]">
+        <div className="mt-4 grid grid-cols-2 gap-2 sm:max-w-md">
+          <button
+            type="button"
+            onClick={() => {
+              askMotion();
+              api.current?.shake();
+            }}
+            className="btn-solid min-h-[2.9rem] gap-2 px-2 text-[15px]"
+          >
             <Sparkles className="h-4 w-4 shrink-0" /> Shake
           </button>
-          {coarse && (
-            <button
-              type="button"
-              onClick={toggleTilt}
-              aria-pressed={tilt}
-              aria-label={tilt ? 'Tilt is on: tap to turn it off' : 'Use tilt: tip your phone to move the logos'}
-              className={`btn min-h-[2.9rem] gap-1.5 border-2 px-2 text-[15px] ${tilt ? 'border-fg bg-fg text-bg' : 'border-fg/20'}`}
-            >
-              <Smartphone className="h-4 w-4 shrink-0" /> Tilt
-              {/* The switch: a track with the knob laid out inside it and slid
-                  by a transform, never positioned absolutely, so it stays in
-                  its track in every browser. */}
-              <span
-                aria-hidden="true"
-                className={`flex h-[18px] w-8 shrink-0 items-center rounded-full p-[3px] transition-colors ${
-                  tilt ? 'bg-accent' : 'bg-fg/20'
-                }`}
-              >
-                <span
-                  className={`block h-3 w-3 rounded-full bg-current transition-transform duration-300 ${
-                    tilt ? 'translate-x-[14px]' : 'translate-x-0'
-                  }`}
-                />
-              </span>
-            </button>
-          )}
           <button type="button" onClick={() => api.current?.reset()} className="btn-ghost min-h-[2.9rem] gap-2 px-2 text-[15px]">
             <RotateCcw className="h-4 w-4 shrink-0" /> Reset
           </button>
@@ -441,4 +455,11 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
       )}
     </div>
   );
+}
+
+/** iPhones and iPads: the tilt sensor needs a tap and a yes before a page may read it. */
+function motionNeedsPermission(): boolean {
+  if (typeof window === 'undefined') return false;
+  const DOE = window.DeviceOrientationEvent as unknown as { requestPermission?: unknown } | undefined;
+  return typeof DOE?.requestPermission === 'function';
 }

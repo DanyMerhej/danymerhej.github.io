@@ -190,9 +190,11 @@ function RoleStack({ onRead }: { onRead: (i: number) => void }) {
         <Fragment key={`${role.company}-${role.title}`}>
           <li
             data-role-card
-            // A focused card comes to the front, or Tab could land on a button
-            // hidden under the cards pinned over it.
-            className={stack ? 'sticky focus-within:z-10' : ''}
+            // A card comes to the front only for keyboard focus, so Tab never
+            // lands on a button hidden under the cards pinned over it. Not for
+            // any focus: closing a role's sheet hands focus back to the card's
+            // button, and that card then stayed in front of every later one.
+            className={stack ? 'sticky has-[:focus-visible]:z-10' : ''}
             style={stack ? { top: `${STACK_TOP + i * STACK_STEP}px` } : undefined}
           >
             <RoleCard role={role} index={i} onRead={() => onRead(i)} />
