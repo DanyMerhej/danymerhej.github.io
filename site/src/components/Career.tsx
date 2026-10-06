@@ -258,7 +258,8 @@ function RoleSheet({ index, onClose }: { index: number | null; onClose: () => vo
   const r = role ?? shown.current;
 
   useScrollLock(open);
-  useOverlayHistory(open, onClose);
+  const layer = useRef<HTMLDivElement>(null);
+  useOverlayHistory(open, onClose, layer);
   const close = useRef<HTMLButtonElement>(null);
 
   // Focus moves into the sheet and stays there (its close button is the only
@@ -284,7 +285,7 @@ function RoleSheet({ index, onClose }: { index: number | null; onClose: () => vo
   return (
     <AnimatePresence>
       {open && r && (
-        <div key="sheet" className="fixed inset-0 z-[320]">
+        <div key="sheet" ref={layer} className="fixed inset-0 z-[320]">
           <motion.button
             type="button"
             aria-label="Close"

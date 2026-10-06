@@ -199,19 +199,27 @@ export function useIntro(): [boolean, () => void] {
  * `close` is held in a ref so an inline arrow function in the parent cannot
  * retrigger the effect and stack up duplicate history entries.
  */
-export function useOverlayHistory(open: boolean, close: () => void): void {
+export function useOverlayHistory(open: boolean, close: () => void, layer?: React.RefObject<HTMLElement>): void {
   const closeRef = useRef(close);
   closeRef.current = close;
   const pushed = useRef(false);
 
   useEffect(() => {
     if (!open) return;
+    layer?.current?.style.removeProperty('visibility');
 
     window.history.pushState({ dmOverlay: true }, '');
     pushed.current = true;
 
-    const onPop = () => {
+    const onPop = (e: PopStateEvent) => {
       pushed.current = false;
+      // A back swipe the browser animated itself (from the left edge on a
+      // phone) has already shown the page without the overlay. Its own
+      // closing animation would then show it a second time, so it is hidden
+      // this instant and closes out of sight.
+      if ((e as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition) {
+        layer?.current?.style.setProperty('visibility', 'hidden');
+      }
       closeRef.current();
     };
 
@@ -223,5 +231,5 @@ export function useOverlayHistory(open: boolean, close: () => void): void {
         window.history.back();
       }
     };
-  }, [open]);
+  }, [open, layer]);
 }

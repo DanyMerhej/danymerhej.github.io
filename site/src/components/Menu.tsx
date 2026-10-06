@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight, Mail, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Project } from '../data/site';
 import { chapters, profile, projects } from '../data/site';
 import { useOverlayHistory, useScrollLock } from '../lib/hooks';
@@ -26,8 +26,9 @@ export function Menu({
   /** Leave a project page for a chapter of the home page. */
   onHome?: (id: string) => void;
 }) {
+  const panel = useRef<HTMLDivElement>(null);
   useScrollLock(open);
-  useOverlayHistory(open, onClose);
+  useOverlayHistory(open, onClose, panel);
 
   useEffect(() => {
     if (!open) return;
@@ -58,6 +59,7 @@ export function Menu({
     <AnimatePresence custom={leaving}>
       {open && (
         <motion.div
+          ref={panel}
           role="dialog"
           aria-modal="true"
           aria-label="Index"
