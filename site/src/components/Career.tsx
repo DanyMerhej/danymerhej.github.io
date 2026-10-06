@@ -1,10 +1,10 @@
-import { motion } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
-import { useRef, useState } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { ArrowUpRight, X } from 'lucide-react';
+import { Fragment, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
 import type { Role } from '../data/site';
 import { experience, impactStats, irisModules, metrics, worlds } from '../data/site';
-import { useWorld } from '../lib/hooks';
+import { useOverlayHistory, useScrollLock, useWorld } from '../lib/hooks';
 import { Mask, Rise, Words, useShown } from './Motion';
 import { Odometer } from './Odometer';
 
@@ -12,12 +12,13 @@ const TILE = ['#C6F94E', '#F0A6E0', '#FFB86B', '#8FB8FF'];
 
 /**
  * The day job, on warm paper because it is the part people read closely:
- * what IRIS is, the numbers, the roles as a timeline read top to bottom, and
- * what changed because of the work.
+ * what IRIS is, the numbers, the roles as a stack of cards, and what changed
+ * because of the work.
  */
 export function Career() {
   const ref = useRef<HTMLElement>(null);
   useWorld(ref, 'career', worlds.cream);
+  const [reading, setReading] = useState<number | null>(null);
 
   return (
     <section id="career" ref={ref} className="relative py-24 md:py-36">
@@ -59,16 +60,13 @@ export function Career() {
         </div>
       </div>
 
-      {/* Roles, as a timeline: newest first, every one in its own place. */}
+      {/* Roles, newest first, stacking as you scroll. */}
       <div className="gutter mt-24 md:mt-32">
         <h3 className="display text-[clamp(2rem,7vw,3.6rem)]">The roles</h3>
-        <p className="mt-2 text-fg/70">Tap a card to read the whole of it.</p>
-        <ol className="relative mt-8 space-y-5 pl-7 before:absolute before:bottom-6 before:left-[7px] before:top-6 before:w-[2px] before:bg-fg/15 sm:pl-10 sm:before:left-[11px]">
-          {experience.map((role, i) => (
-            <RoleCard key={`${role.company}-${role.title}`} role={role} index={i} />
-          ))}
-        </ol>
+        <p className="mt-2 text-fg/70">Scroll through them, and open any one to read the whole of it.</p>
+        <RoleStack onRead={setReading} />
       </div>
+      <RoleSheet index={reading} onClose={() => setReading(null)} />
 
       {/* Impact */}
       <div className="gutter mt-20 md:mt-28">
@@ -131,81 +129,224 @@ function Orbit() {
   );
 }
 
-function RoleCard({ role, index }: { role: Role; index: number }) {
-  const [open, setOpen] = useState(index === 0);
-  const id = `role-${index}`;
-  const lead = role.points.slice(0, 1);
-  const rest = role.points.slice(1);
+/**
+ * The roles as a stack. Each card pins a little below the one before it and
+ * holds still for a stretch of scrolling, so it can be read, before the next
+ * one slides up over it. Every card is as tall as the tallest, so a short
+ * card never leaves the bottom of the one beneath it showing.
+ *
+ * Cards never expand in place: a pinned card that grew had to stop pinning,
+ * which threw it back up the page and made the stack skip a card. The whole
+ * role opens in a sheet instead.
+ */
+const STACK_TOP = 88;
+const STACK_STEP = 16;
+
+function RoleStack({ onRead }: { onRead: (i: number) => void }) {
+  const list = useRef<HTMLOListElement>(null);
+  // Off when a card would not fit on screen below the ones pinned above it
+  // (a phone on its side, very large text): the next card would cover the
+  // end of it, button included, so the cards simply follow one another.
+  const [stack, setStack] = useState(true);
+
+  // The tallest card's content sets the height of all of them.
+  useLayoutEffect(() => {
+    const ol = list.current;
+    if (!ol) return;
+    const inners = [...ol.querySelectorAll<HTMLElement>('[data-role-inner]')];
+    const cards = [...ol.querySelectorAll<HTMLElement>('[data-role-card]')];
+    // The screen's height with the browser's toolbars showing, which does not
+    // change as they slide away, so the stack never switches mid-scroll.
+    const probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;top:0;height:100svh;width:0;visibility:hidden;pointer-events:none';
+    document.body.appendChild(probe);
+    const fit = () => {
+      const tallest = Math.max(...inners.map((el) => el.offsetHeight));
+      if (tallest <= 0) return;
+      ol.style.setProperty('--role-h', `${tallest}px`);
+      const card = Math.max(...cards.map((el) => el.offsetHeight));
+      setStack(STACK_TOP + STACK_STEP * (experience.length - 1) + card + 16 <= probe.offsetHeight);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    inners.forEach((el) => ro.observe(el));
+    let width = window.innerWidth;
+    const onResize = () => {
+      if (window.innerWidth === width) return;
+      width = window.innerWidth;
+      fit();
+    };
+    window.addEventListener('resize', onResize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener('resize', onResize);
+      probe.remove();
+    };
+  }, []);
 
   return (
-    <Rise as="li" className="relative">
-      {/* The dot on the timeline. */}
-      <span
-        aria-hidden="true"
-        className={`absolute -left-7 top-7 h-4 w-4 rounded-full border-[3px] border-bg sm:-left-10 sm:h-6 sm:w-6 ${
-          role.current ? 'bg-accent' : 'bg-fg/40'
-        }`}
-      />
-      <div className="rounded-[1.75rem] border-2 border-fg/10 bg-fg/[0.04] p-5 sm:p-8">
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-expanded={open}
-          aria-controls={id}
-          className="flex w-full items-start gap-4 text-left"
-        >
-          <span className="min-w-0 flex-1">
-            <span className="flex flex-wrap items-center gap-2">
-              <span className="chip">{role.period}</span>
-              {role.current && <span className="chip bg-accent text-bg">Now</span>}
-            </span>
-            <span className="display mt-3 block text-[clamp(1.6rem,6.5vw,2.5rem)] leading-[1.02]">{role.title}</span>
-            <span className="mt-1.5 block text-[15px] text-fg/70">
-              {role.company} · {role.place}
+    <ol ref={list} className={stack ? 'mt-8' : 'mt-8 space-y-5'}>
+      {experience.map((role, i) => (
+        <Fragment key={`${role.company}-${role.title}`}>
+          <li
+            data-role-card
+            // A focused card comes to the front, or Tab could land on a button
+            // hidden under the cards pinned over it.
+            className={stack ? 'sticky focus-within:z-10' : ''}
+            style={stack ? { top: `${STACK_TOP + i * STACK_STEP}px` } : undefined}
+          >
+            <RoleCard role={role} index={i} onRead={() => onRead(i)} />
+          </li>
+          {/* The stretch of scrolling each card holds still for. A spacer
+              rather than a margin: a pinned card's margin counts against how
+              long it can stay pinned, and the last card would never hold. */}
+          {stack && <li aria-hidden="true" className="h-[32svh]" />}
+        </Fragment>
+      ))}
+    </ol>
+  );
+}
+
+function RoleCard({ role, index, onRead }: { role: Role; index: number; onRead: () => void }) {
+  const more = role.points.length - 1 + (role.tags?.length ? 1 : 0);
+
+  return (
+    <div
+      className="rounded-[1.75rem] border-2 border-fg/10 p-5 shadow-[0_-14px_40px_-22px_rgba(0,0,0,0.3)] sm:p-8"
+      style={{ background: `color-mix(in srgb, var(--bg) ${94 - index * 2}%, var(--fg))` }}
+    >
+      <div style={{ minHeight: 'var(--role-h)' }}>
+        <div data-role-inner className="flex flex-col">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className="chip">{role.period}</span>
+            {role.current && <span className="chip bg-accent text-bg">Now</span>}
+            <span className="ml-auto font-mono text-[12px] text-fg/50">
+              {String(index + 1).padStart(2, '0')} / {String(experience.length).padStart(2, '0')}
             </span>
           </span>
-          {rest.length > 0 && (
-            <ChevronDown
-              className={`mt-1 h-6 w-6 shrink-0 transition-transform duration-500 ${open ? 'rotate-180' : ''}`}
-              aria-hidden="true"
-            />
-          )}
-        </button>
-
-        <ul className="mt-5 space-y-3">
-          {lead.map((p) => (
-            <Point key={p} text={p} />
-          ))}
-        </ul>
-        <motion.div
-          id={id}
-          initial={false}
-          animate={{ height: open ? 'auto' : 0, opacity: open ? 1 : 0 }}
-          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-          className="overflow-hidden"
-        >
-          <ul className="space-y-3 pt-3">
-            {rest.map((p) => (
-              <Point key={p} text={p} />
-            ))}
+          <span className="display mt-3 block text-[clamp(1.6rem,6.5vw,2.5rem)] leading-[1.02]">{role.title}</span>
+          <span className="mt-1.5 block text-[15px] text-fg/70">
+            {role.company} · {role.place}
+          </span>
+          <ul className="mt-5">
+            <Point text={role.points[0]} />
           </ul>
-          {role.tags && (
-            <div className="mt-5 flex flex-wrap gap-1.5">
-              {role.tags.map((t) => (
-                <span key={t} className="chip">
-                  {t}
-                </span>
-              ))}
-            </div>
+          {more > 0 && (
+            <button
+              type="button"
+              onClick={onRead}
+              className="mt-5 inline-flex items-center gap-1.5 self-start text-[14.5px] font-semibold text-accent"
+            >
+              Read the whole role <ArrowUpRight className="h-4 w-4" />
+            </button>
           )}
-        </motion.div>
-        {!open && rest.length > 0 && (
-          <button type="button" onClick={() => setOpen(true)} className="mt-3 text-[14px] font-semibold text-accent">
-            + {rest.length} more
-          </button>
-        )}
+        </div>
       </div>
-    </Rise>
+    </div>
+  );
+}
+
+/** One role in full, in a sheet from the bottom of the screen. */
+function RoleSheet({ index, onClose }: { index: number | null; onClose: () => void }) {
+  const open = index !== null;
+  const role = index === null ? null : experience[index];
+  // Kept through the closing animation, after `index` has gone.
+  const shown = useRef<Role | null>(null);
+  if (role) shown.current = role;
+  const r = role ?? shown.current;
+
+  useScrollLock(open);
+  useOverlayHistory(open, onClose);
+  const close = useRef<HTMLButtonElement>(null);
+
+  // Focus moves into the sheet and stays there (its close button is the only
+  // control), and goes back to the card's button when it closes.
+  useEffect(() => {
+    if (!open) return;
+    const opener = document.activeElement as HTMLElement | null;
+    close.current?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'Tab') {
+        e.preventDefault();
+        close.current?.focus({ preventScroll: true });
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      opener?.focus({ preventScroll: true });
+    };
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && r && (
+        <div key="sheet" className="fixed inset-0 z-[320]">
+          <motion.button
+            type="button"
+            aria-label="Close"
+            tabIndex={-1}
+            onClick={onClose}
+            className="absolute inset-0 h-full w-full cursor-default bg-black/45"
+            style={{ touchAction: 'none' }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35 }}
+          />
+          <motion.div
+            role="dialog"
+            aria-modal="true"
+            aria-label={r.title}
+            // Its own scrolling, not the smooth scroller's.
+            data-lenis-prevent
+            className="absolute inset-x-0 bottom-0 mx-auto max-h-[86svh] max-w-2xl overflow-y-auto overscroll-contain rounded-t-[2rem] bg-bg p-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] text-fg shadow-[0_-20px_60px_-20px_rgba(0,0,0,0.5)] sm:p-8"
+            initial={{ transform: 'translateY(100%)' }}
+            animate={{ transform: 'translateY(0%)' }}
+            exit={{ transform: 'translateY(100%)' }}
+            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <div className="mx-auto mb-5 h-1.5 w-12 rounded-full bg-fg/20" aria-hidden="true" />
+            <div className="flex items-start gap-4">
+              <div className="min-w-0 flex-1">
+                <span className="flex flex-wrap items-center gap-2">
+                  <span className="chip">{r.period}</span>
+                  {r.current && <span className="chip bg-accent text-bg">Now</span>}
+                </span>
+                <p className="display mt-3 text-[clamp(1.8rem,7vw,2.6rem)] leading-[1.02]">{r.title}</p>
+                <p className="mt-1.5 text-[15px] text-fg/70">
+                  {r.company} · {r.place}
+                </p>
+              </div>
+              <button
+                ref={close}
+                type="button"
+                onClick={onClose}
+                aria-label="Close"
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2 border-fg/15"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <ul className="mt-6 space-y-3">
+              {r.points.map((p) => (
+                <Point key={p} text={p} />
+              ))}
+            </ul>
+            {r.tags && (
+              <div className="mt-6 flex flex-wrap gap-1.5">
+                {r.tags.map((t) => (
+                  <span key={t} className="chip">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            )}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
   );
 }
 

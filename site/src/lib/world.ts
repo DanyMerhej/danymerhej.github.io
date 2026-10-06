@@ -74,6 +74,15 @@ function apply() {
   listeners.forEach((l) => l());
 }
 
+/**
+ * Jumps the background cross-fade to its end. A page transition already
+ * animates from one page to the other, so the fade would only play a second
+ * colour change inside it.
+ */
+export function finishWorldFade(): void {
+  fading?.finish();
+}
+
 /** Holds the current world while the page is scrolled programmatically. */
 export function holdWorld(on: boolean): void {
   held = on;
@@ -88,6 +97,43 @@ export function claimWorld(id: string, world: World): () => void {
     if (i !== -1) stack.splice(i, 1);
     apply();
   };
+}
+
+/*
+ * Sections that claim a world while they cross the middle of the screen.
+ * Normally an IntersectionObserver keeps each claim up to date; the registry
+ * exists so a page change can settle every claim at once, before the browser
+ * takes its picture of the new page, rather than a frame later.
+ */
+const sections = new Map<Element, (inside: boolean) => void>();
+
+/** Claims `world` for as long as `el` crosses the centre line. Returns the cleanup. */
+export function observeWorld(el: Element, id: string, world: World): () => void {
+  let release: (() => void) | null = null;
+  const sync = (inside: boolean) => {
+    if (inside && !release) release = claimWorld(id, world);
+    else if (!inside && release) {
+      release();
+      release = null;
+    }
+  };
+  sections.set(el, sync);
+  const io = new IntersectionObserver(([e]) => sync(e.isIntersecting), { rootMargin: '-49% 0px -49% 0px' });
+  io.observe(el);
+  return () => {
+    io.disconnect();
+    sections.delete(el);
+    sync(false);
+  };
+}
+
+/** Brings every claim up to date now, from layout. Used once per page change. */
+export function settleWorlds(): void {
+  const mid = window.innerHeight / 2;
+  sections.forEach((sync, el) => {
+    const r = el.getBoundingClientRect();
+    sync(r.height > 0 && r.top <= mid && r.bottom >= mid);
+  });
 }
 
 /** The world shown when nothing claims the centre, e.g. a page's own colour. */

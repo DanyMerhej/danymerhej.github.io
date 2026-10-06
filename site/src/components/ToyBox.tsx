@@ -82,6 +82,11 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
       const right = Bodies.rectangle(W + T / 2, H / 2 - H, T, H * 4, wallOpts);
       const ceiling = Bodies.rectangle(W / 2, -H * 2.5, W * 3, T, wallOpts);
       Composite.add(engine.world, [floor, left, right, ceiling]);
+      // The marks fall in from above, so the lid starts high and drops to the
+      // top of the box once they are all inside. After that a shake, or a
+      // phone tipped backwards, can never throw them out of sight.
+      let lid = false;
+      const placeLid = () => Body.setPosition(ceiling, { x: W / 2, y: lid ? -T / 2 : -H * 2.5 });
 
       const items = nodes.current
         .map((node, i) => {
@@ -107,7 +112,11 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
       const drags = new Map<number, { c: Matter.Constraint; sx: number; sy: number; t: number; item: (typeof items)[number] }>();
       const local = (e: PointerEvent) => {
         const r = root.getBoundingClientRect();
-        return { x: e.clientX - r.left, y: e.clientY - r.top };
+        const x = e.clientX - r.left;
+        const y = e.clientY - r.top;
+        // With the lid on, a finger dragged above the box would pull the mark
+        // through it and leave it out of sight, so the pull stops at the edges.
+        return lid ? { x: Math.min(Math.max(x, 0), W), y: Math.min(Math.max(y, 0), H) } : { x, y };
       };
 
       const handlers = items.map((item) => {
@@ -170,6 +179,7 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
         Body.setPosition(floor, { x: W / 2, y: H + T / 2 });
         Body.setPosition(left, { x: -T / 2, y: H / 2 - H });
         Body.setPosition(right, { x: W + T / 2, y: H / 2 - H });
+        placeLid();
         items.forEach(({ body, w }) => {
           if (body.position.x > W - w / 2) Body.setPosition(body, { x: W - w / 2, y: body.position.y });
         });
@@ -203,6 +213,8 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
           kick();
         },
         reset() {
+          lid = false;
+          placeLid();
           items.forEach(({ body, w, h }, i) => {
             Sleeping.set(body, false);
             Body.setPosition(body, { x: w / 2 + Math.random() * Math.max(W - w, 1), y: -h - i * 40 });
@@ -247,6 +259,10 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
           Engine.update(engine, STEP);
           acc -= STEP;
           stepped = true;
+        }
+        if (stepped && !lid && items.every(({ body }) => body.bounds.min.y > 2)) {
+          lid = true;
+          placeLid();
         }
         if (stepped) {
           items.forEach(({ node, body, w, h }, i) => {
@@ -311,8 +327,10 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
   return (
     <div>
       {physics && (
-        <p className="mb-3 flex items-center gap-2 text-[15px] text-fg/70">
-          <Hand className="h-4 w-4 shrink-0" /> Grab and throw the logos. Tap one to open it.
+        // One line on any phone, down to 320px: the size follows the width of
+        // the screen. Narrower than that (zoomed right in) it may wrap.
+        <p className="mb-3 flex items-center gap-1.5 text-[clamp(10px,3.45vw,15px)] text-fg/70 min-[300px]:whitespace-nowrap">
+          <Hand className="h-[1.1em] w-[1.1em] shrink-0" /> Grab and throw the logos. Tap one to open it.
         </p>
       )}
       <div
@@ -338,6 +356,7 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
               type="button"
               ref={(n) => (nodes.current[i] = n)}
               data-project={p.id}
+              data-vt-logo={p.id}
               data-cursor="Throw me"
               aria-label={`${p.name}: open the project`}
               onClick={(e) => {
@@ -395,16 +414,21 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
               onClick={toggleTilt}
               aria-pressed={tilt}
               aria-label={tilt ? 'Tilt is on: tap to turn it off' : 'Use tilt: tip your phone to move the logos'}
-              className={`btn min-h-[2.9rem] gap-2 border-2 px-2 text-[15px] ${tilt ? 'border-fg bg-fg text-bg' : 'border-fg/20'}`}
+              className={`btn min-h-[2.9rem] gap-1.5 border-2 px-2 text-[15px] ${tilt ? 'border-fg bg-fg text-bg' : 'border-fg/20'}`}
             >
               <Smartphone className="h-4 w-4 shrink-0" /> Tilt
+              {/* The switch: a track with the knob laid out inside it and slid
+                  by a transform, never positioned absolutely, so it stays in
+                  its track in every browser. */}
               <span
                 aria-hidden="true"
-                className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${tilt ? 'bg-accent' : 'bg-fg/20'}`}
+                className={`flex h-[18px] w-8 shrink-0 items-center rounded-full p-[3px] transition-colors ${
+                  tilt ? 'bg-accent' : 'bg-fg/20'
+                }`}
               >
                 <span
-                  className={`absolute top-0.5 h-3 w-3 rounded-full bg-current transition-transform duration-300 ${
-                    tilt ? 'translate-x-[13px]' : 'translate-x-0.5'
+                  className={`block h-3 w-3 rounded-full bg-current transition-transform duration-300 ${
+                    tilt ? 'translate-x-[14px]' : 'translate-x-0'
                   }`}
                 />
               </span>

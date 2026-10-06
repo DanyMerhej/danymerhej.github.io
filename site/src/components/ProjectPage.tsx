@@ -1,10 +1,10 @@
 import { ArrowLeft, ArrowRight, ArrowUpRight, LayoutGrid } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { CSSProperties } from 'react';
 import type { Project } from '../data/site';
 import { projects, statusLabel } from '../data/site';
 import { useWorld } from '../lib/hooks';
-import { setBaseWorld } from '../lib/world';
+import { setBaseWorld, settleWorlds } from '../lib/world';
 import { FlipPhone } from './FlipPhone';
 import { Browser, Phone, Shot } from './Frames';
 import { LinkIcon } from './LinkIcon';
@@ -43,8 +43,13 @@ export function ProjectPage({
   const next = projects[(i + 1) % projects.length];
   const prev = projects[(i - 1 + projects.length) % projects.length];
 
-  useEffect(() => {
+  // Before paint, and inside a page transition's update, so the picture of
+  // the new page is taken in its own colours.
+  useLayoutEffect(() => {
     setBaseWorld(project.world);
+    // The home page has just been hidden; drop its sections' claims now
+    // rather than when their observers next report.
+    settleWorlds();
     const before = document.title;
     document.title = `${project.name} | Danny Merhej`;
     return () => {
@@ -107,27 +112,33 @@ export function ProjectPage({
         className="gutter relative pb-16 pt-28 md:pb-24 md:pt-36"
         style={{ viewTimelineName: '--project-hero' } as CSSProperties}
       >
-        {/* Two layers, so the two motions never fight over one transform: the
-            outer rolls away with the scroll (index.css, .sd-roll), the inner
-            pops in once when the page opens. */}
-        <span className="sd-roll absolute right-5 top-24 sm:right-8 md:right-12 md:top-32">
-          <span
-            className="enter-pop flex h-24 w-24 items-center justify-center overflow-hidden rounded-[1.8rem] sm:h-32 sm:w-32 md:h-44 md:w-44 md:rounded-[2.4rem]"
-            style={{
-              background: 'linear-gradient(150deg, #1D1B24, #0B0A10)',
-              boxShadow: `0 30px 60px -20px ${project.hues[0]}, inset 0 0 0 2px ${project.hues[0]}55`,
-            }}
-          >
-            <img src={project.logo} alt="" width={320} height={320} className="h-full w-full object-contain p-3 md:p-5" />
+        {/* The mark sits in the flow beside the labels on a phone, so a long
+            name can never run underneath it; on a wide screen it floats at the
+            right, with the title kept clear of its column. */}
+        <div className="flex items-center gap-4 md:block">
+          {/* Two layers, so the two motions never fight over one transform:
+              the outer rolls away with the scroll (index.css, .sd-roll), the
+              inner pops in once when the page opens. */}
+          <span className="sd-roll shrink-0 md:absolute md:right-12 md:top-32">
+            <span
+              data-vt-target
+              className="enter-pop flex h-[4.5rem] w-[4.5rem] items-center justify-center overflow-hidden rounded-[1.4rem] sm:h-24 sm:w-24 sm:rounded-[1.8rem] md:h-44 md:w-44 md:rounded-[2.4rem]"
+              style={{
+                background: 'linear-gradient(150deg, #1D1B24, #0B0A10)',
+                boxShadow: `0 24px 50px -20px ${project.hues[0]}, inset 0 0 0 2px ${project.hues[0]}55`,
+              }}
+            >
+              <img src={project.logo} alt="" width={320} height={320} className="h-full w-full object-contain p-2.5 sm:p-3 md:p-5" />
+            </span>
           </span>
-        </span>
 
-        <div className="flex flex-wrap gap-2 pr-28 sm:pr-40">
-          <span className="eyebrow border-fg/30">{project.kind === 'product' ? 'My product' : 'Client build'}</span>
-          <span className="eyebrow border-fg/30">{project.category}</span>
+          <div className="flex min-w-0 flex-wrap gap-2 md:pr-56">
+            <span className="eyebrow border-fg/30">{project.kind === 'product' ? 'My product' : 'Client build'}</span>
+            <span className="eyebrow border-fg/30">{project.category}</span>
+          </div>
         </div>
 
-        <h1 className="display h-project mt-8 max-w-[14ch]">
+        <h1 className="display h-project mt-8 max-w-[14ch] md:mr-56">
           <Letters text={project.name} delay={0.2} />
         </h1>
         <p
@@ -180,7 +191,7 @@ export function ProjectPage({
             {project.demo ? (
               <FlipPhone project={project} />
             ) : project.shots?.mobile ? (
-              <Phone glow={project.hues[0]}>
+              <Phone glow={project.hues[0]} status={project.shots.mobile}>
                 <Shot src={project.shots.mobile} alt={`${project.name} on a phone`} />
               </Phone>
             ) : null}

@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUpRight, Mail, X } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { Project } from '../data/site';
 import { chapters, profile, projects } from '../data/site';
 import { useOverlayHistory, useScrollLock } from '../lib/hooks';
@@ -37,28 +37,46 @@ export function Menu({
   }, [open, onClose]);
 
   // Closing pops the history entry the menu pushed; wait for that before
-  // moving anywhere, or the move would be undone by it.
-  const after = (fn: () => void) => {
+  // moving anywhere, or the move would be undone by it. When the move is to
+  // another page, the index just fades, quickly, so the page transition that
+  // follows starts from a clean picture of the page rather than from a
+  // half-closed index.
+  const [leaving, setLeaving] = useState(false);
+  useEffect(() => {
+    if (open) setLeaving(false);
+  }, [open]);
+  const after = (fn: () => void, toPage = false) => {
+    if (toPage) setLeaving(true);
     onClose();
-    setTimeout(fn, 320);
+    setTimeout(fn, toPage ? 220 : 320);
   };
 
   const products = projects.filter((p) => p.kind === 'product');
   const builds = projects.filter((p) => p.kind === 'build');
 
   return (
-    <AnimatePresence>
+    <AnimatePresence custom={leaving}>
       {open && (
         <motion.div
           role="dialog"
           aria-modal="true"
           aria-label="Index"
+          // Its own scrolling, not the smooth scroller's.
+          data-lenis-prevent
           className="fixed inset-0 z-[300] overflow-y-auto overscroll-contain bg-fg text-bg"
           // A whole transform string, so framer hands it to the compositor.
-          initial={{ transform: 'translateY(-100%)' }}
-          animate={{ transform: 'translateY(0%)' }}
-          exit={{ transform: 'translateY(-100%)' }}
-          transition={{ duration: 0.6, ease: EASE }}
+          custom={leaving}
+          variants={{
+            hidden: { transform: 'translateY(-100%)' },
+            shown: { transform: 'translateY(0%)', transition: { duration: 0.6, ease: EASE } },
+            gone: (toPage: boolean) =>
+              toPage
+                ? { opacity: 0, transition: { duration: 0.18, ease: 'easeOut' } }
+                : { transform: 'translateY(-100%)', transition: { duration: 0.6, ease: EASE } },
+          }}
+          initial="hidden"
+          animate="shown"
+          exit="gone"
         >
           <div className="gutter flex h-16 items-center justify-between">
             <span className="font-display text-[16px] font-bold">Index</span>
@@ -84,7 +102,7 @@ export function Menu({
                           if (onHome) onHome(c.id);
                           else if (c.id === 'top') scrollToY(0);
                           else scrollToId(c.id);
-                        })
+                        }, Boolean(onHome))
                       }
                       className="group flex w-full items-baseline gap-4 py-1.5 text-left"
                       initial={{ transform: 'translateY(100%)' }}
@@ -102,8 +120,8 @@ export function Menu({
             </nav>
 
             <div className="space-y-10 md:col-span-5 md:col-start-8">
-              <ProjectList title="My products" list={products} onPick={(p, x, y) => after(() => onOpenProject(p, x, y))} />
-              <ProjectList title="Client builds" list={builds} onPick={(p, x, y) => after(() => onOpenProject(p, x, y))} />
+              <ProjectList title="My products" list={products} onPick={(p, x, y) => after(() => onOpenProject(p, x, y), true)} />
+              <ProjectList title="Client builds" list={builds} onPick={(p, x, y) => after(() => onOpenProject(p, x, y), true)} />
               <div className="grid gap-2">
                 <a href={profile.whatsapp} target="_blank" rel="noreferrer noopener" className="btn-whatsapp w-full">
                   <WhatsAppIcon className="h-5 w-5" /> Message me on WhatsApp

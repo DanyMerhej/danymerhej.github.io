@@ -1,6 +1,7 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import type { CSSProperties } from 'react';
+import { useFinePointer } from '../lib/hooks';
 import { onScrollFrame } from '../lib/scroll';
 
 const EASE = [0.22, 1, 0.36, 1] as const;
@@ -16,9 +17,10 @@ const EASE = [0.22, 1, 0.36, 1] as const;
  * letters in and the line can never run off the edge of a phone.
  *
  * Built to be cheap: letter positions are measured once (and on resize), never
- * per frame; the entrance and the scroll scatter are CSS animations on the
- * compositor; and on a touchscreen the loop only runs while a finger is on
- * the glass, then stops.
+ * per frame, and the entrance and the scroll scatter are CSS animations on
+ * the compositor. On a touchscreen nothing runs per frame at all: the letters
+ * ride a CSS wave, and a finger lifts the ones under it with a transform, so
+ * a phone never has to reshape type while it animates.
  */
 export function KineticWord({
   text,
@@ -41,6 +43,7 @@ export function KineticWord({
   const letters = useRef<(HTMLSpanElement | null)[]>([]);
   const [size, setSize] = useState<number | null>(null);
   const reduced = useReducedMotion();
+  const fine = useFinePointer();
   const chars = text.split('');
 
   const fit = useCallback(() => {
@@ -67,7 +70,6 @@ export function KineticWord({
     if (reduced || still || size === null) return;
     const b = box.current;
     if (!b) return;
-    const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 
     // Letter centres in page coordinates, from layout (offsets ignore the
     // entrance transforms), refreshed only when the box changes size.
@@ -76,54 +78,101 @@ export function KineticWord({
       const r = b.getBoundingClientRect();
       const ox = r.left;
       const oy = r.top + window.scrollY;
-      centres = letters.current.map((el) =>
-        el ? { x: ox + el.offsetLeft + el.offsetWidth / 2, y: oy + el.offsetTop + el.offsetHeight / 2 } : { x: 0, y: 0 },
-      );
+      centres = letters.current.map((el) => {
+        if (!el) return { x: 0, y: 0 };
+        // Up the offsetParent chain to the box: the animated wrappers around
+        // each letter count as offset parents in some browsers.
+        let x = 0;
+        let y = 0;
+        let n: HTMLElement | null = el;
+        while (n && n !== b) {
+          x += n.offsetLeft;
+          y += n.offsetTop;
+          n = n.offsetParent as HTMLElement | null;
+        }
+        return { x: ox + x + el.offsetWidth / 2, y: oy + y + el.offsetHeight / 2 };
+      });
     };
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(b);
 
+    let pageY = 0;
+    const unsubscribe = onScrollFrame((y) => (pageY = y));
+    const sigma = size * 0.9;
+    const nearness = (i: number, x: number, y: number) => {
+      const c = centres[i];
+      if (!c) return 0;
+      return Math.exp(-((c.x - x) ** 2 + (c.y - y) ** 2) / (2 * sigma * sigma));
+    };
+
+    if (!fine) {
+      // A finger lifts and swells the letters under it. One transform per
+      // letter, written only when it changes and eased by a CSS transition,
+      // so the compositor does the moving.
+      const shown = chars.map(() => '');
+      const press = (x: number, y: number, on: boolean) => {
+        letters.current.forEach((el, i) => {
+          if (!el) return;
+          const n = on ? Math.round(nearness(i, x, y + pageY) * 10) / 10 : 0;
+          const t = n > 0.05 ? `translateY(${(-12 * n).toFixed(1)}%) scale(${(1 + 0.16 * n).toFixed(3)})` : '';
+          if (t !== shown[i]) {
+            el.style.transform = t;
+            shown[i] = t;
+          }
+        });
+      };
+      let visible = false;
+      const io = new IntersectionObserver(([e]) => (visible = e.isIntersecting));
+      io.observe(b);
+      const onTouch = (e: TouchEvent) => {
+        const t = e.touches[0];
+        if (visible && t) press(t.clientX, t.clientY, true);
+      };
+      const onEnd = (e: TouchEvent) => {
+        if (e.touches.length === 0) press(0, 0, false);
+      };
+      window.addEventListener('touchstart', onTouch, { passive: true });
+      window.addEventListener('touchmove', onTouch, { passive: true });
+      window.addEventListener('touchend', onEnd, { passive: true });
+      window.addEventListener('touchcancel', onEnd, { passive: true });
+      return () => {
+        unsubscribe();
+        io.disconnect();
+        ro.disconnect();
+        window.removeEventListener('touchstart', onTouch);
+        window.removeEventListener('touchmove', onTouch);
+        window.removeEventListener('touchend', onEnd);
+        window.removeEventListener('touchcancel', onEnd);
+      };
+    }
+
+    // With a mouse: the letters breathe through the weight and width axes, and
+    // swell toward the cursor.
     const pointer = { x: -9999, y: -9999, live: 0 };
     const state = chars.map(() => ({ w: 800, s: 100 }));
     const t0 = performance.now();
-    // On a touchscreen, one slow wave plays after the entrance, then the
-    // letters rest until touched.
-    const waveUntil = fine ? Infinity : (delay + 1.2 + 2.6) * 1000;
     let frame = 0;
     let running = false;
     let visible = true;
-    let skip = false;
 
     const loop = (now: number) => {
       const t = (now - t0) / 1000;
-      const waving = now - t0 < waveUntil;
       pointer.live *= 0.95;
-
-      // A phone draws the axes at half rate; the eye cannot tell, the GPU can.
-      skip = !fine && !skip;
-      let moving = waving || pointer.live > 0.01;
-      const sigma = size * 0.9;
       const warm = Math.min(Math.max((t - delay - 0.9) / 1.2, 0), 1);
-      const cool = fine ? 1 : Math.min(Math.max((waveUntil / 1000 - t) / 0.8, 0), 1);
 
       letters.current.forEach((el, i) => {
         if (!el) return;
-        const c = centres[i];
-        const d2 = c ? (c.x - pointer.x) ** 2 + (c.y - pointer.y) ** 2 : Infinity;
-        const near = Math.exp(-d2 / (2 * sigma * sigma)) * pointer.live;
-        const amp = waving ? warm * cool : 0;
-        const waveW = 800 - 240 * amp * (0.5 + 0.5 * Math.sin(t * 1.5 + i * 0.75));
-        const waveS = 100 - 16 * amp * (0.5 + 0.5 * Math.sin(t * 1.1 + i * 0.9 + 1.3));
-        // Under the finger the letter thins and narrows, so it reads as being pressed.
+        const near = nearness(i, pointer.x, pointer.y) * pointer.live;
+        const waveW = 800 - 240 * warm * (0.5 + 0.5 * Math.sin(t * 1.5 + i * 0.75));
+        const waveS = 100 - 16 * warm * (0.5 + 0.5 * Math.sin(t * 1.1 + i * 0.9 + 1.3));
+        // Under the cursor the letter thins and narrows, so it reads as being pressed.
         const goalW = waveW - (waveW - 380) * near;
         const goalS = waveS - (waveS - 78) * near;
 
         const st = state[i];
         st.w += (goalW - st.w) * 0.14;
         st.s += (goalS - st.s) * 0.14;
-        if (Math.abs(goalW - st.w) > 0.5 || Math.abs(goalS - st.s) > 0.05) moving = true;
-        if (skip) return;
         // Quantised: each distinct weight and width is a new font instance to
         // shape and rasterise, so the letters move through a set of cached
         // steps rather than an endless run of new ones.
@@ -133,7 +182,7 @@ export function KineticWord({
         if (el.style.fontStretch !== sv) el.style.fontStretch = sv;
       });
 
-      if (moving && visible) frame = requestAnimationFrame(loop);
+      if (visible) frame = requestAnimationFrame(loop);
       else running = false;
     };
 
@@ -143,19 +192,13 @@ export function KineticWord({
       frame = requestAnimationFrame(loop);
     };
 
-    let pageY = 0;
-    const unsubscribe = onScrollFrame((y) => (pageY = y));
-    const onMove = (x: number, y: number) => {
-      pointer.x = x;
-      pointer.y = y + pageY;
+    const onPointer = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse') return;
+      pointer.x = e.clientX;
+      pointer.y = e.clientY + pageY;
       pointer.live = 1;
-      start();
     };
-    const onPointer = (e: PointerEvent) => e.pointerType === 'mouse' && onMove(e.clientX, e.clientY);
-    const onTouch = (e: TouchEvent) => e.touches[0] && onMove(e.touches[0].clientX, e.touches[0].clientY);
     window.addEventListener('pointermove', onPointer, { passive: true });
-    window.addEventListener('touchstart', onTouch, { passive: true });
-    window.addEventListener('touchmove', onTouch, { passive: true });
 
     const io = new IntersectionObserver(([e]) => {
       visible = e.isIntersecting;
@@ -170,11 +213,9 @@ export function KineticWord({
       io.disconnect();
       ro.disconnect();
       window.removeEventListener('pointermove', onPointer);
-      window.removeEventListener('touchstart', onTouch);
-      window.removeEventListener('touchmove', onTouch);
     };
     // chars is derived from text
-  }, [reduced, still, size, text, delay]);
+  }, [reduced, still, size, text, delay, fine]);
 
   return (
     <div ref={box} className={`relative ${className ?? ''}`}>
@@ -194,24 +235,33 @@ export function KineticWord({
         style={{ fontSize: size ?? undefined, visibility: size === null || still ? 'hidden' : 'visible' }}
       >
         {chars.map((c, i) => (
+          // One moving layer per element: the entrance, the wave, the scroll
+          // scatter and the finger each have their own span, because a
+          // browser will not hand two transform animations on one element to
+          // the compositor.
           <span
             key={i}
             className={still ? 'inline-block' : 'enter-letter'}
-            style={{ '--d': `${delay + i * 0.05}s`, '--r': `${i % 2 ? 14 : -14}deg` } as CSSProperties}
+            style={{ '--d': `${delay + i * 0.05}s`, '--r': `${i % 2 ? 14 : -14}deg`, '--i': i } as CSSProperties}
           >
-            <span
-              ref={(el) => (letters.current[i] = el)}
-              className={`inline-block ${scatter && !still ? 'sd-scatter' : ''}`}
-              style={
-                {
-                  fontWeight: 800,
-                  fontStretch: '100%',
-                  '--sy': `${-(80 + ((i * 53) % 110))}px`,
-                  '--sr': `${(i % 2 === 0 ? -1 : 1) * (8 + ((i * 29) % 26))}deg`,
-                } as CSSProperties
-              }
-            >
-              {c === ' ' ? '\u00A0' : c}
+            <span className={`inline-block ${fine || still ? '' : 'kin-wave'}`}>
+              <span
+                className={`inline-block ${scatter && !still ? 'sd-scatter' : ''}`}
+                style={
+                  {
+                    '--sy': `${-(80 + ((i * 53) % 110))}px`,
+                    '--sr': `${(i % 2 === 0 ? -1 : 1) * (8 + ((i * 29) % 26))}deg`,
+                  } as CSSProperties
+                }
+              >
+                <span
+                  ref={(el) => (letters.current[i] = el)}
+                  className={`inline-block ${fine || still ? '' : 'kin-press'}`}
+                  style={{ fontWeight: 800, fontStretch: '100%' }}
+                >
+                  {c === ' ' ? '\u00A0' : c}
+                </span>
+              </span>
             </span>
           </span>
         ))}

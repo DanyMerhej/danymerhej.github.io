@@ -19,7 +19,7 @@ import { projects, worlds } from './data/site';
 import { useIntro } from './lib/hooks';
 import { goBackTo, navigate, savedHomeScroll, takePendingHash, useRoute, workPath } from './lib/router';
 import { scrollToId, scrollToY, startSmoothScroll } from './lib/smooth';
-import { setBaseWorld } from './lib/world';
+import { setBaseWorld, settleWorlds } from './lib/world';
 
 export default function App() {
   const route = useRoute();
@@ -32,6 +32,9 @@ export default function App() {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
+        // Not from inside another dialog (a role's sheet), or the index would
+        // open underneath it.
+        if (document.querySelector('[aria-modal="true"]:not([aria-label="Index"])')) return;
         setMenuOpen((o) => !o);
       }
     };
@@ -40,18 +43,24 @@ export default function App() {
   }, []);
 
   const openProject = useCallback((p: Project, x: number, y: number) => {
-    navigate(workPath(p.id), { colour: p.world.bg, x, y, label: p.name });
+    navigate(workPath(p.id), { colour: p.world.bg, x, y, direction: 'forward', morph: p.id });
   }, []);
 
   // Back through history when the home page is the entry before, so the
   // phone's back gesture afterwards leaves the site rather than reopening the
   // project; forward to the right chapter when the visit started here.
   const backHome = useCallback((p: Project, x: number, y: number) => {
-    goBackTo('/', { colour: worlds.lilac.bg, x, y, hash: p.kind === 'product' ? `work-${p.id}` : 'builds' });
+    goBackTo('/', {
+      colour: worlds.lilac.bg,
+      x,
+      y,
+      hash: p.kind === 'product' ? `work-${p.id}` : 'builds',
+      direction: 'back',
+    });
   }, []);
 
   const toChapter = useCallback((id: string) => {
-    navigate('/', { colour: worlds.lilac.bg, hash: id });
+    navigate('/', { colour: worlds.lilac.bg, hash: id, direction: 'back' });
   }, []);
 
   const closeMenu = useCallback(() => setMenuOpen(false), []);
@@ -62,16 +71,19 @@ export default function App() {
   // The home page is built once and then kept, hidden, while a project is
   // open: coming back is a reveal, not a rebuild of the whole page.
   const [homeBuilt, setHomeBuilt] = useState(!project);
+  // Once it has been left, its entrances count as played (index.css).
+  const [homeSettled, setHomeSettled] = useState(false);
   useEffect(() => {
     if (!project) setHomeBuilt(true);
-  }, [project]);
+    else if (homeBuilt) setHomeSettled(true);
+  }, [project, homeBuilt]);
 
   return (
     <div className="relative min-h-screen overflow-x-clip">
       <AnimatePresence>{intro && <Intro key="intro" onDone={endIntro} />}</AnimatePresence>
 
       {homeBuilt && (
-        <div hidden={Boolean(project)}>
+        <div hidden={Boolean(project)} data-settled={homeSettled ? '' : undefined}>
           <Home active={!project} onOpen={openProject} onOpenMenu={openMenu} />
         </div>
       )}
@@ -122,13 +134,20 @@ const Home = memo(function Home({
     const saved = homeVisited ? savedHomeScroll() : null;
     homeVisited = true;
 
-    // Wait two frames: the pinned sections size themselves after mounting.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        if (hash) scrollToId(hash, true);
-        else if (saved !== null) scrollToY(saved, true);
-      }),
-    );
+    const restore = () => {
+      if (hash) scrollToId(hash, true);
+      else if (saved !== null) scrollToY(saved, true);
+    };
+    // Coming back, the page is already built and sized: land now, inside
+    // this commit, so a page transition's picture of the home page is taken
+    // at the right place and in the right colours.
+    if (!initial) {
+      restore();
+      settleWorlds();
+    }
+    // A first visit waits two frames: the pinned sections size themselves
+    // after mounting. Coming back, this is a harmless second look.
+    requestAnimationFrame(() => requestAnimationFrame(restore));
   }, [active]);
 
   return (

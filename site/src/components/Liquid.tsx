@@ -245,7 +245,7 @@ export function Liquid({
     let prevDraw = performance.now();
     const draw = (now: number) => {
       // Easing scaled by elapsed time, so the swirl settles at the same speed
-      // at 30, 60 or 120 frames a second.
+      // at 60, 90 or 120 frames a second.
       const steps = Math.min((now - prevDraw) / (1000 / 60), 4);
       prevDraw = now;
       const k = 1 - Math.pow(1 - 0.06, steps);
@@ -260,19 +260,15 @@ export function Liquid({
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
 
-    // A phone draws at 30 frames a second: the colour drifts slowly enough
-    // that nobody sees the difference, and the GPU gets half its time back.
-    const interval = coarse ? 1000 / 30 - 2 : 0;
-    let last = 0;
+    // Every frame the screen shows: the buffer is small enough (a third of
+    // the CSS size on a phone, before any pixel ratio) that a frame costs the
+    // GPU next to nothing, and a capped rate is exactly what reads as stutter.
     const loop = (now: number) => {
       if (!visible || document.hidden || pausedRef.current) {
         running = false;
         return;
       }
-      if (now - last >= interval) {
-        last = now;
-        draw(now);
-      }
+      draw(now);
       frame = requestAnimationFrame(loop);
     };
 

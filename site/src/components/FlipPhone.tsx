@@ -43,7 +43,7 @@ export function FlipPhone({ project, className }: { project: Project; className?
             className={`[backface-visibility:hidden] [-webkit-backface-visibility:hidden] ${shot ? '' : 'invisible'}`}
             style={{ pointerEvents: playing ? 'none' : 'auto' }}
           >
-            <Phone glow={project.hues[0]}>
+            <Phone glow={project.hues[0]} status={shot}>
               {shot ? <Shot src={shot} alt={`${project.name} on a phone`} /> : null}
             </Phone>
           </div>

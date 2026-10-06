@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { World } from '../data/site';
 import { pauseScroll } from './smooth';
-import { claimWorld } from './world';
+import { observeWorld } from './world';
 
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() =>
@@ -102,22 +102,7 @@ export function useWorld<T extends HTMLElement>(ref: React.RefObject<T>, id: str
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    let release: (() => void) | null = null;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting && !release) release = claimWorld(id, world);
-        else if (!e.isIntersecting && release) {
-          release();
-          release = null;
-        }
-      },
-      { rootMargin: '-49% 0px -49% 0px' },
-    );
-    io.observe(el);
-    return () => {
-      io.disconnect();
-      release?.();
-    };
+    return observeWorld(el, id, world);
   }, [ref, id, world]);
 }
 

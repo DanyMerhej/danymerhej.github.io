@@ -35,8 +35,13 @@ export interface NavOpts {
   x?: number;
   y?: number;
   hash?: string;
-  /** Shown on the curtain while the page changes. */
-  label?: string;
+  /**
+   * Which way the change reads: a project opens over the home page
+   * ('forward'), and the home page comes back out from under it ('back').
+   */
+  direction?: 'forward' | 'back';
+  /** A project whose mark was tapped, to fly from where it was to its place on the new page. */
+  morph?: string;
 }
 
 type Runner = (swap: () => void, opts: NavOpts) => void;
@@ -133,8 +138,9 @@ if (typeof window !== 'undefined') {
     if (next.name === route.name && (next.name === 'home' || (route.name === 'work' && next.id === route.id))) return;
     rememberHomeScroll();
 
-    const opts = pendingPopOpts ?? {
+    const opts: NavOpts = pendingPopOpts ?? {
       colour: next.name === 'work' ? (projects.find((p) => p.id === next.id)?.world.bg ?? '#110E1C') : '#FFF4E4',
+      direction: next.name === 'work' ? 'forward' : 'back',
     };
     pendingPopOpts = null;
     // A swipe-back on a phone already animated the page away; a curtain on top

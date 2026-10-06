@@ -214,13 +214,47 @@
     animation: enter-pop 0.9s cubic-bezier(0.34, 1.56, 0.64, 1) var(--d, 0.25s) both;
   }
 
+  /* On a touchscreen the hero's letters ride a slow wave once they have
+     landed, on a span of its own inside the entrance (--d and --i come down
+     from it), so each runs on the compositor. */
+  .kin-wave {
+    transform-origin: 50% 100%;
+    animation: kin-wave 3.6s ease-in-out calc(var(--d, 0s) + 1.1s + var(--i, 0) * 0.18s) infinite;
+  }
+  /* The dock's caption names a new section, then gets out of the way rather
+     than sitting over the content above the dock. */
+  .dock-caption {
+    animation: dock-caption 2.4s var(--ease-out) both;
+  }
+
+  /* A finger lifts the letters under it (Kinetic.tsx writes the transform). */
+  .kin-press {
+    transform-origin: 50% 85%;
+    transition: transform 0.55s var(--ease-out);
+  }
+
+  /*
+   * The home page stays mounted, hidden, while a project is open, and showing
+   * it again would restart every entrance from the beginning: the hero's text
+   * vanished and came back. Once it has been left, entrances stay finished.
+   */
+  [data-settled] :is(.enter-rise, .enter-letter, .enter-pop) {
+    animation: none;
+  }
+  [data-settled] .kin-wave {
+    animation-delay: calc(var(--i, 0) * -0.23s);
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .rv-mask > .rv-in,
     .rv-word > .rv-in,
     .rv-rise,
     .enter-rise,
     .enter-letter,
-    .enter-pop {
+    .enter-pop,
+    .kin-press,
+    .kin-wave,
+    .dock-caption {
       transform: none !important;
       opacity: 1 !important;
       animation: none !important;
@@ -355,6 +389,30 @@
   from {
     opacity: 0;
     transform: translateY(115%) rotate(var(--r, 12deg));
+  }
+}
+@keyframes dock-caption {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  14%,
+  72% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+@keyframes kin-wave {
+  0%,
+  100% {
+    transform: none;
+  }
+  50% {
+    transform: translateY(-5%) scaleY(1.07);
   }
 }
 @keyframes enter-pop {
@@ -514,6 +572,73 @@
 @keyframes roll-away {
   to {
     transform: translate3d(0, 120px, 0) rotate(40deg);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Page changes (Curtain.tsx), where the browser can morph between them */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Opening a project: it slides up over the home page like a sheet, rounded at
+ * the top until it lands, while the home page sinks back and dims under it.
+ * Going back: the project drops away and the home page rises out from under
+ * it. Pictures of the two pages are animated, on the compositor.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  /* The default blend is for cross-fades; two opaque pages would add up. */
+  mix-blend-mode: normal;
+}
+html[data-vt='forward']::view-transition-old(root) {
+  animation: vt-sink 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+html[data-vt='forward']::view-transition-new(root) {
+  animation: vt-sheet-in 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+html[data-vt='back']::view-transition-old(root) {
+  z-index: 2;
+  animation: vt-sheet-out 0.6s cubic-bezier(0.5, 0, 0.2, 1) both;
+}
+html[data-vt='back']::view-transition-new(root) {
+  z-index: 1;
+  animation: vt-rise-back 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+/* The tapped mark, flying to its place on the project page. */
+::view-transition-group(project-mark) {
+  z-index: 3;
+  animation-duration: 0.72s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes vt-sink {
+  to {
+    transform: scale(0.92);
+    filter: brightness(0.62);
+  }
+}
+@keyframes vt-sheet-in {
+  from {
+    transform: translateY(100%);
+    clip-path: inset(0 round 32px 32px 0 0);
+  }
+  to {
+    clip-path: inset(0 round 0);
+  }
+}
+@keyframes vt-sheet-out {
+  from {
+    clip-path: inset(0 round 0);
+  }
+  to {
+    transform: translateY(100%);
+    clip-path: inset(0 round 32px 32px 0 0);
+  }
+}
+@keyframes vt-rise-back {
+  from {
+    transform: scale(0.92);
+    filter: brightness(0.62);
   }
 }
 

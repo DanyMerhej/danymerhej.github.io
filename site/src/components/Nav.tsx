@@ -139,8 +139,7 @@ export function Dock({ onOpenMenu }: { onOpenMenu: () => void }) {
       <p
         key={caption}
         aria-hidden="true"
-        className="enter-rise glass mb-2 rounded-full px-3 py-1 text-[12px] font-semibold"
-        style={{ '--d': '0s' } as CSSProperties}
+        className="dock-caption glass mb-2 rounded-full px-3 py-1 text-[12px] font-semibold"
       >
         {caption}
       </p>

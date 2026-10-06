@@ -222,7 +222,9 @@ function BuildCard({
       </button>
 
       <div className="shrink-0 p-5 pt-4">
-        <div className="flex items-center gap-2 text-[12.5px] font-medium opacity-80">
+        {/* Each item keeps to one line and the row wraps between them, rather
+            than every item folding onto two lines of its own. */}
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 whitespace-nowrap text-[12.5px] font-medium opacity-80">
           <span>{project.category}</span>
           <span aria-hidden="true">·</span>
           <span>{statusLabel[project.status]}</span>

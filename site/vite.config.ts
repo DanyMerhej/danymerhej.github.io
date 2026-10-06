@@ -60,8 +60,29 @@ function projectPages(): Plugin {
   };
 }
 
+/**
+ * framer-motion 11 runs opacity and transform animations as Web Animations.
+ * When one finishes it sets the final value for its next frame and removes
+ * the Web Animation straight away, so for one frame the element shows its
+ * old style: the index flashed open after closing and blinked shut after
+ * opening. Committing the final style before the animation is removed closes
+ * that gap. The build fails if the code it patches ever moves.
+ */
+function framerFinishFix(): Plugin {
+  const target = /(motionValue\.set\(getFinalKeyframe\([^;]*;\s*onComplete && onComplete\(\);\s*)(this\.cancel\(\);)/;
+  return {
+    name: 'framer-finish-fix',
+    apply: 'build',
+    transform(code, id) {
+      if (!id.includes('framer-motion') || !id.endsWith('AcceleratedAnimation.mjs')) return null;
+      if (!target.test(code)) this.error('framer-finish-fix: the onfinish handler has changed; check the patch.');
+      return code.replace(target, '$1try { animation.commitStyles(); } catch (e) {}\n                $2');
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [react(), projectPages()],
+  plugins: [react(), projectPages(), framerFinishFix()],
   base: '/',
   build: {
     outDir: 'dist',
