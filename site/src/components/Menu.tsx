@@ -37,8 +37,9 @@ export function Menu({
     return () => window.removeEventListener('keydown', onKey);
   }, [open, onClose]);
 
-  // Closing pops the history entry the menu pushed; wait for that before
-  // moving anywhere, or the move would be undone by it. When the move is to
+  // Closing may pop a history entry the menu pushed (in browsers without a
+  // CloseWatcher); wait for that before moving anywhere, or the move would be
+  // undone by it. When the move is to
   // another page, the index just fades, quickly, so the page transition that
   // follows starts from a clean picture of the page rather than from a
   // half-closed index.

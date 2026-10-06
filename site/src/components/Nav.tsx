@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 import { chapters, profile } from '../data/site';
 import { useActiveSection } from '../lib/hooks';
 import { onScrollFrame } from '../lib/scroll';
-import { scrollToId, scrollToY } from '../lib/smooth';
+import { scrollToId, scrollToY, useJumpTarget } from '../lib/smooth';
 import { WhatsAppIcon } from './Icons';
 
 const IDS = chapters.map((c) => c.id);
@@ -16,6 +16,19 @@ const DOCK = [
   { id: 'career', label: 'Career', icon: Briefcase },
   { id: 'contact', label: 'Contact', icon: Send },
 ];
+
+/**
+ * The dock button for a chapter. Chapters without one of their own (skills,
+ * beyond, about) belong to the last button before them, so the highlight only
+ * ever moves forward as the page is read down.
+ */
+function dockIndex(id: string): number {
+  for (let c = IDS.indexOf(id); c >= 0; c--) {
+    const i = DOCK.findIndex((d) => d.id === IDS[c]);
+    if (i !== -1) return i;
+  }
+  return 0;
+}
 
 /** The top bar: who this is, where you are. Slides away while you read down, back when you scroll up. */
 export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
@@ -127,8 +140,12 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
  */
 export function Dock({ onOpenMenu }: { onOpenMenu: () => void }) {
   const active = useActiveSection(IDS);
-  const at = DOCK.findIndex((d) => d.id === active);
-  const caption = chapters.find((c) => c.id === active)?.label ?? '';
+  // While a tap on the dock (or the index) scrolls the page, the destination,
+  // not each section passed on the way.
+  const jump = useJumpTarget();
+  const shown = jump ?? active;
+  const at = dockIndex(shown);
+  const caption = chapters.find((c) => c.id === shown)?.label ?? '';
 
   return (
     <nav
@@ -147,8 +164,8 @@ export function Dock({ onOpenMenu }: { onOpenMenu: () => void }) {
         {/* The highlight: one element, moved, never re-laid out. */}
         <span
           aria-hidden="true"
-          className="absolute left-1.5 top-1.5 h-11 w-12 rounded-full bg-fg transition-[transform,opacity] duration-500 ease-out"
-          style={{ transform: `translateX(${Math.max(at, 0) * 48}px)`, opacity: at < 0 ? 0 : 1 }}
+          className="absolute left-1.5 top-1.5 h-11 w-12 rounded-full bg-fg transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(${at * 48}px)` }}
         />
         {DOCK.map((d, i) => {
           const on = i === at;

@@ -1,4 +1,5 @@
 import Lenis from 'lenis';
+import { useSyncExternalStore } from 'react';
 import { holdWorld } from './world';
 
 /**
@@ -36,12 +37,37 @@ export function pauseScroll(paused: boolean): void {
   else lenis.start();
 }
 
+/*
+ * Where a programmatic scroll is headed (a section id, or 'top'), while it
+ * runs. The dock shows the destination straight away instead of lighting up
+ * every section the page passes on the way.
+ */
+let jump: string | null = null;
+const jumpListeners = new Set<() => void>();
+function setJump(to: string | null) {
+  if (jump === to) return;
+  jump = to;
+  jumpListeners.forEach((l) => l());
+}
+
+export function useJumpTarget(): string | null {
+  return useSyncExternalStore(
+    (l) => {
+      jumpListeners.add(l);
+      return () => jumpListeners.delete(l);
+    },
+    () => jump,
+    () => null,
+  );
+}
+
 /**
  * A programmatic smooth scroll holds the colour world until it lands, so a
  * jump across the page is one change of colour rather than one per section.
  */
-function holdUntilLanded(): () => void {
+function holdUntilLanded(to: string | null): () => void {
   holdWorld(true);
+  setJump(to);
   let done = false;
   const release = () => {
     if (done) return;
@@ -49,6 +75,7 @@ function holdUntilLanded(): () => void {
     window.removeEventListener('scrollend', release);
     window.clearTimeout(timer);
     holdWorld(false);
+    setJump(null);
   };
   // Lenis reports its own landing; a native smooth scroll fires scrollend.
   if (!lenis) window.addEventListener('scrollend', release, { once: true });
@@ -65,7 +92,7 @@ export function scrollToY(y: number, immediate = false): void {
     else window.scrollTo({ top: y, behavior: 'auto' });
     return;
   }
-  const release = holdUntilLanded();
+  const release = holdUntilLanded(y <= 0 ? 'top' : null);
   if (lenis) lenis.scrollTo(y, { force: true, onComplete: release });
   else window.scrollTo({ top: y, behavior: 'smooth' });
 }
@@ -79,7 +106,7 @@ export function scrollToId(id: string, immediate = false): void {
     else el.scrollIntoView({ behavior: 'auto', block: 'start' });
     return;
   }
-  const release = holdUntilLanded();
+  const release = holdUntilLanded(id);
   if (lenis) lenis.scrollTo(el, { force: true, offset: 0, onComplete: release });
   else el.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }

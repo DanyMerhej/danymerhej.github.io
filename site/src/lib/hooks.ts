@@ -189,16 +189,24 @@ export function useIntro(): [boolean, () => void] {
 }
 
 /**
- * Makes an overlay behave like a page for the device back button.
+ * Makes the device's back button or gesture close an overlay, the way a
+ * visitor expects, instead of leaving the site underneath it.
  *
- * Without this, opening the index changes React state only. The browser has no
- * idea anything happened, so Android's back gesture leaves the site altogether
- * while the overlay is still on screen. Pushing a history entry on open, and
- * closing on popstate, makes back mean "close this" the way a visitor expects.
+ * Where the browser has a CloseWatcher (Chrome on Android), that is all it
+ * takes: back closes the overlay, nothing is added to history, and the
+ * overlay plays its own closing animation from either edge of the screen.
+ *
+ * Elsewhere, the overlay pushes a history entry and closes when it is popped.
+ * A back swipe that the browser animates itself (from the left edge) has then
+ * already shown the page without the overlay, so the overlay is hidden that
+ * instant rather than shown closing a second time.
  *
  * `close` is held in a ref so an inline arrow function in the parent cannot
  * retrigger the effect and stack up duplicate history entries.
  */
+type Watcher = { onclose: (() => void) | null; destroy: () => void };
+const CloseWatcherCtor = (globalThis as unknown as { CloseWatcher?: new () => Watcher }).CloseWatcher;
+
 export function useOverlayHistory(open: boolean, close: () => void, layer?: React.RefObject<HTMLElement>): void {
   const closeRef = useRef(close);
   closeRef.current = close;
@@ -208,15 +216,21 @@ export function useOverlayHistory(open: boolean, close: () => void, layer?: Reac
     if (!open) return;
     layer?.current?.style.removeProperty('visibility');
 
+    if (CloseWatcherCtor) {
+      try {
+        const watcher = new CloseWatcherCtor();
+        watcher.onclose = () => closeRef.current();
+        return () => watcher.destroy();
+      } catch {
+        /* fall through to history */
+      }
+    }
+
     window.history.pushState({ dmOverlay: true }, '');
     pushed.current = true;
 
     const onPop = (e: PopStateEvent) => {
       pushed.current = false;
-      // A back swipe the browser animated itself (from the left edge on a
-      // phone) has already shown the page without the overlay. Its own
-      // closing animation would then show it a second time, so it is hidden
-      // this instant and closes out of sight.
       if ((e as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition) {
         layer?.current?.style.setProperty('visibility', 'hidden');
       }

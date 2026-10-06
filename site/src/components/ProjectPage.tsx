@@ -278,10 +278,19 @@ function NextBand({ next, onOpen }: { next: Project; onOpen: (p: Project, x: num
       data-cursor="Next"
     >
       <div className="gutter">
-        <p className="text-[15px] font-semibold opacity-70">Next up</p>
+        {/* On a phone the arrow sits beside "Next up", so a long name (Alpha
+            Supplements) has the full width and never pushes it off screen. */}
+        <div className="flex items-center justify-between gap-4">
+          <p className="text-[15px] font-semibold opacity-70">Next up</p>
+          <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-fg text-bg transition-transform duration-500 group-hover:translate-x-2 md:hidden">
+            <ArrowRight className="h-6 w-6" />
+          </span>
+        </div>
         <div className="mt-4 flex items-end justify-between gap-6">
-          <p className="display h-project transition-[font-stretch] duration-700 group-hover:[font-stretch:78%]">{next.name}</p>
-          <span className="mb-3 flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-fg text-bg transition-transform duration-500 group-hover:translate-x-2 md:h-24 md:w-24">
+          <p className="display h-project min-w-0 transition-[font-stretch] duration-700 group-hover:[font-stretch:78%]">
+            {next.name}
+          </p>
+          <span className="mb-3 hidden h-24 w-24 shrink-0 items-center justify-center rounded-full bg-fg text-bg transition-transform duration-500 group-hover:translate-x-2 md:flex">
             <ArrowRight className="h-7 w-7" />
           </span>
         </div>
