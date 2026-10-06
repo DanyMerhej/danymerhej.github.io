@@ -1,5 +1,5 @@
 import { AnimatePresence } from 'framer-motion';
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { About } from './components/About';
 import { Beyond } from './components/Beyond';
 import { Builds } from './components/Builds';
@@ -17,7 +17,7 @@ import { Skills } from './components/Skills';
 import type { Project } from './data/site';
 import { projects, worlds } from './data/site';
 import { useIntro } from './lib/hooks';
-import { navigate, savedHomeScroll, takePendingHash, useRoute, workPath } from './lib/router';
+import { goBackTo, navigate, savedHomeScroll, takePendingHash, useRoute, workPath } from './lib/router';
 import { scrollToId, scrollToY, startSmoothScroll } from './lib/smooth';
 import { setBaseWorld } from './lib/world';
 
@@ -43,8 +43,11 @@ export default function App() {
     navigate(workPath(p.id), { colour: p.world.bg, x, y, label: p.name });
   }, []);
 
+  // Back through history when the home page is the entry before, so the
+  // phone's back gesture afterwards leaves the site rather than reopening the
+  // project; forward to the right chapter when the visit started here.
   const backHome = useCallback((p: Project, x: number, y: number) => {
-    navigate('/', { colour: worlds.lilac.bg, x, y, hash: p.kind === 'product' ? `work-${p.id}` : 'builds' });
+    goBackTo('/', { colour: worlds.lilac.bg, x, y, hash: p.kind === 'product' ? `work-${p.id}` : 'builds' });
   }, []);
 
   const toChapter = useCallback((id: string) => {
@@ -56,14 +59,24 @@ export default function App() {
 
   const project = route.name === 'work' ? projects.find((p) => p.id === route.id) : undefined;
 
+  // The home page is built once and then kept, hidden, while a project is
+  // open: coming back is a reveal, not a rebuild of the whole page.
+  const [homeBuilt, setHomeBuilt] = useState(!project);
+  useEffect(() => {
+    if (!project) setHomeBuilt(true);
+  }, [project]);
+
   return (
-    <div className="grain relative min-h-screen overflow-x-clip">
+    <div className="relative min-h-screen overflow-x-clip">
       <AnimatePresence>{intro && <Intro key="intro" onDone={endIntro} />}</AnimatePresence>
 
-      {project ? (
+      {homeBuilt && (
+        <div hidden={Boolean(project)}>
+          <Home active={!project} onOpen={openProject} onOpenMenu={openMenu} />
+        </div>
+      )}
+      {project && (
         <ProjectView key={project.id} project={project} onOpen={openProject} onBack={backHome} onOpenMenu={openMenu} />
-      ) : (
-        <Home intro={intro} onOpen={openProject} onOpenMenu={openMenu} />
       )}
 
       <Menu
@@ -82,23 +95,30 @@ export default function App() {
 /** Whether the home page has been shown before in this visit, i.e. whether to restore a scroll position. */
 let homeVisited = false;
 
-function Home({
-  intro,
+/**
+ * Memoised: opening the index must not re-render a page of this size. Its
+ * callbacks are stable, so it renders only when it is shown or hidden; the
+ * intro's state reaches the hero through its own small store instead.
+ */
+const Home = memo(function Home({
+  active,
   onOpen,
   onOpenMenu,
 }: {
-  intro: boolean;
+  active: boolean;
   onOpen: (p: Project, x: number, y: number) => void;
   onOpenMenu: () => void;
 }) {
-  const restored = useRef(false);
+  const first = useRef(true);
 
+  // Every time the page is shown: its own colours, and the right place on it.
   useLayoutEffect(() => {
+    if (!active) return;
     setBaseWorld(worlds.night);
-    if (restored.current) return;
-    restored.current = true;
 
-    const hash = takePendingHash() ?? (homeVisited ? null : window.location.hash.slice(1) || null);
+    const initial = first.current;
+    first.current = false;
+    const hash = takePendingHash() ?? (initial && !homeVisited ? window.location.hash.slice(1) || null : null);
     const saved = homeVisited ? savedHomeScroll() : null;
     homeVisited = true;
 
@@ -109,13 +129,13 @@ function Home({
         else if (saved !== null) scrollToY(saved, true);
       }),
     );
-  }, []);
+  }, [active]);
 
   return (
     <>
       <Header onOpenMenu={onOpenMenu} />
       <main>
-        <Hero intro={intro} />
+        <Hero />
         <Products onOpen={onOpen} />
         <Builds onOpen={onOpen} />
         <Career />
@@ -127,7 +147,7 @@ function Home({
       <Dock onOpenMenu={onOpenMenu} />
     </>
   );
-}
+});
 
 function ProjectView(props: React.ComponentProps<typeof ProjectPage>) {
   useLayoutEffect(() => {

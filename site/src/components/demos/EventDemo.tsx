@@ -131,12 +131,9 @@ export function EventDemo() {
             </span>
           </div>
           <div className="relative mt-1.5 h-1.5 overflow-hidden rounded-full bg-black/15">
-            <motion.div
-              className="absolute inset-y-0 rounded-full bg-[#1A0A1A]"
-              style={rtl ? { right: 0 } : { left: 0 }}
-              initial={{ width: '10%' }}
-              animate={{ width: ['20%', '72%'] }}
-              transition={{ duration: 6, repeat: Infinity, repeatType: 'reverse', ease: 'easeInOut' }}
+            <div
+              className="bar-breathe absolute inset-0 rounded-full bg-[#1A0A1A]"
+              style={{ transformOrigin: rtl ? 'right' : 'left' }}
             />
           </div>
         </motion.div>

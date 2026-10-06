@@ -9,6 +9,9 @@ const mix = (v: string) => `color-mix(in srgb, var(${v}) calc(<alpha-value> * 10
 
 export default {
   content: ['./index.html', './src/**/*.{ts,tsx}'],
+  // hover: styles only where hovering exists, so a tap on a phone never leaves
+  // a button stuck in its hover state.
+  future: { hoverOnlyWhenSupported: true },
   theme: {
     extend: {
       colors: {
@@ -26,22 +29,7 @@ export default {
         out: 'cubic-bezier(0.22, 1, 0.36, 1)',
         spring: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
       },
-      keyframes: {
-        spin: { to: { transform: 'rotate(360deg)' } },
-        floaty: {
-          '0%, 100%': { transform: 'translateY(0)' },
-          '50%': { transform: 'translateY(-8px)' },
-        },
-        pulse2: {
-          '0%': { transform: 'scale(1)', opacity: '0.7' },
-          '100%': { transform: 'scale(2.4)', opacity: '0' },
-        },
-      },
-      animation: {
-        'spin-slow': 'spin 18s linear infinite',
-        floaty: 'floaty 3.2s ease-in-out infinite',
-        pulse2: 'pulse2 1.8s cubic-bezier(0.22, 1, 0.36, 1) infinite',
-      },
+      // Loops and scroll-driven motion live in index.css, as compositor-only CSS.
     },
   },
   plugins: [],

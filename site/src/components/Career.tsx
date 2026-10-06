@@ -1,17 +1,18 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { Role } from '../data/site';
 import { experience, impactStats, irisModules, metrics, worlds } from '../data/site';
 import { useWorld } from '../lib/hooks';
-import { Mask, Rise, Words } from './Motion';
+import { Mask, Rise, Words, useShown } from './Motion';
 import { Odometer } from './Odometer';
 
 const TILE = ['#C6F94E', '#F0A6E0', '#FFB86B', '#8FB8FF'];
 
 /**
  * The day job, on warm paper because it is the part people read closely:
- * what IRIS is, the numbers, the roles as cards that stack as you scroll, and
+ * what IRIS is, the numbers, the roles as a timeline read top to bottom, and
  * what changed because of the work.
  */
 export function Career() {
@@ -58,11 +59,11 @@ export function Career() {
         </div>
       </div>
 
-      {/* Roles, stacking like a deck as you scroll. */}
+      {/* Roles, as a timeline: newest first, every one in its own place. */}
       <div className="gutter mt-24 md:mt-32">
         <h3 className="display text-[clamp(2rem,7vw,3.6rem)]">The roles</h3>
         <p className="mt-2 text-fg/70">Tap a card to read the whole of it.</p>
-        <ol className="mt-8">
+        <ol className="relative mt-8 space-y-5 pl-7 before:absolute before:bottom-6 before:left-[7px] before:top-6 before:w-[2px] before:bg-fg/15 sm:pl-10 sm:before:left-[11px]">
           {experience.map((role, i) => (
             <RoleCard key={`${role.company}-${role.title}`} role={role} index={i} />
           ))}
@@ -82,75 +83,70 @@ export function Career() {
   );
 }
 
-/** IRIS in the middle, its modules circling it. */
+/**
+ * IRIS in the middle, its modules circling it. The ring turns with a CSS
+ * animation and each label turns back the other way to stay upright, all on
+ * the compositor; no script runs while it spins.
+ */
 function Orbit() {
-  const reduced = useReducedMotion();
   const n = irisModules.length;
+  const [ref, shown] = useShown<HTMLDivElement>();
 
   return (
-    <div className="relative mx-auto aspect-square w-[76%] max-w-[440px] sm:w-full">
+    <div ref={ref} className="relative mx-auto aspect-square w-[84%] max-w-[440px] sm:w-full">
       <div className="absolute inset-[8%] rounded-full border-2 border-dashed border-fg/15" />
-      <div className="absolute inset-[22%] rounded-full border-2 border-fg/10" />
-      <motion.div
-        className="absolute inset-[34%] flex flex-col items-center justify-center rounded-full bg-fg text-bg"
-        initial={{ scale: 0.6, opacity: 0 }}
-        whileInView={{ scale: 1, opacity: 1 }}
-        viewport={{ once: true }}
-        transition={{ type: 'spring', stiffness: 120, damping: 14 }}
+      <div className="absolute inset-[19%] rounded-full border-2 border-fg/10" />
+      <div
+        className={`absolute inset-[37%] flex flex-col items-center justify-center rounded-full bg-fg text-bg transition-[transform,opacity] duration-700 ease-out ${
+          shown ? 'scale-100 opacity-100' : 'scale-50 opacity-0'
+        }`}
       >
-        <span className="display text-[clamp(1.8rem,8vw,2.8rem)]">IRIS</span>
-        <span className="text-[11px] font-medium opacity-70">30+ insurers</span>
-      </motion.div>
+        <span className="display text-[clamp(1.5rem,7vw,2.6rem)]">IRIS</span>
+        <span className="text-[10px] font-medium opacity-70 sm:text-[11px]">30+ insurers</span>
+      </div>
 
-      <motion.ul
-        className="absolute inset-0"
-        animate={reduced ? undefined : { rotate: 360 }}
-        transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-      >
+      <ul className="spin-slow absolute inset-0">
         {irisModules.map((m, i) => {
           const a = (i / n) * Math.PI * 2 - Math.PI / 2;
-          // Two rings, alternating, so long names never sit shoulder to shoulder.
-          const r = i % 2 ? 28 : 45;
+          // Two rings, alternating, so long names never sit shoulder to shoulder,
+          // and the inner one clear of the centre.
+          const r = i % 2 ? 31 : 46;
           return (
-            <li
-              key={m}
-              className="absolute"
-              style={{ left: `${50 + r * Math.cos(a)}%`, top: `${50 + r * Math.sin(a)}%` }}
-            >
-              <motion.span
-                className="block -translate-x-1/2 -translate-y-1/2"
-                animate={reduced ? undefined : { rotate: -360 }}
-                transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-              >
-                <span
-                  className="block whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#16121F] shadow-sm sm:text-[12.5px]"
-                  style={{ background: TILE[i % TILE.length] }}
-                >
-                  {m}
+            <li key={m} className="absolute" style={{ left: `${50 + r * Math.cos(a)}%`, top: `${50 + r * Math.sin(a)}%` }}>
+              <span className="block -translate-x-1/2 -translate-y-1/2">
+                <span className="spin-slow-rev block">
+                  <span
+                    className="block whitespace-nowrap rounded-full px-2.5 py-1 text-[10.5px] font-semibold text-[#16121F] shadow-sm sm:text-[12.5px]"
+                    style={{ background: TILE[i % TILE.length] }}
+                  >
+                    {m}
+                  </span>
                 </span>
-              </motion.span>
+              </span>
             </li>
           );
         })}
-      </motion.ul>
+      </ul>
     </div>
   );
 }
 
 function RoleCard({ role, index }: { role: Role; index: number }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(index === 0);
   const id = `role-${index}`;
   const lead = role.points.slice(0, 1);
   const rest = role.points.slice(1);
 
   return (
-    // Closed cards stack as you scroll. An open one stops sticking, or the next
-    // card would slide over the part you are still reading.
-    <li className={`${open ? 'relative' : 'sticky'} mb-5`} style={{ top: `${84 + index * 14}px` }}>
-      <div
-        className="rounded-[1.75rem] border-2 border-fg/10 p-5 shadow-[0_-12px_40px_-20px_rgba(0,0,0,0.25)] sm:p-8"
-        style={{ background: 'color-mix(in srgb, var(--bg) 92%, var(--fg))' }}
-      >
+    <Rise as="li" className="relative">
+      {/* The dot on the timeline. */}
+      <span
+        aria-hidden="true"
+        className={`absolute -left-7 top-7 h-4 w-4 rounded-full border-[3px] border-bg sm:-left-10 sm:h-6 sm:w-6 ${
+          role.current ? 'bg-accent' : 'bg-fg/40'
+        }`}
+      />
+      <div className="rounded-[1.75rem] border-2 border-fg/10 bg-fg/[0.04] p-5 sm:p-8">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
@@ -168,10 +164,12 @@ function RoleCard({ role, index }: { role: Role; index: number }) {
               {role.company} · {role.place}
             </span>
           </span>
-          <ChevronDown
-            className={`mt-1 h-6 w-6 shrink-0 transition-transform duration-500 ${open ? 'rotate-180' : ''}`}
-            aria-hidden="true"
-          />
+          {rest.length > 0 && (
+            <ChevronDown
+              className={`mt-1 h-6 w-6 shrink-0 transition-transform duration-500 ${open ? 'rotate-180' : ''}`}
+              aria-hidden="true"
+            />
+          )}
         </button>
 
         <ul className="mt-5 space-y-3">
@@ -183,7 +181,7 @@ function RoleCard({ role, index }: { role: Role; index: number }) {
           id={id}
           initial={false}
           animate={{ height: open ? 'auto' : 0, opacity: open ? 1 : 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+          transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
           className="overflow-hidden"
         >
           <ul className="space-y-3 pt-3">
@@ -207,7 +205,7 @@ function RoleCard({ role, index }: { role: Role; index: number }) {
           </button>
         )}
       </div>
-    </li>
+    </Rise>
   );
 }
 
@@ -230,20 +228,24 @@ function Impact({
   colour: string;
 }) {
   const pct = parseInt(stat.value, 10);
+  const [ref, shown] = useShown<HTMLDivElement>();
   return (
-    <Rise delay={delay} className="rounded-[1.75rem] border-2 border-fg/10 p-5 sm:p-7">
+    <Rise as="li" delay={delay} className="rounded-[1.75rem] border-2 border-fg/10 p-5 sm:p-7">
       <div className="flex items-baseline justify-between gap-4">
         <p className="display text-[clamp(2.6rem,11vw,4rem)] leading-none">{stat.value}</p>
         <p className="text-right text-[16px] font-semibold">{stat.label}</p>
       </div>
-      <div className="mt-4 h-3 overflow-hidden rounded-full bg-fg/10">
-        <motion.div
-          className="h-full rounded-full"
-          style={{ background: colour }}
-          initial={{ width: 0 }}
-          whileInView={{ width: `${pct}%` }}
-          viewport={{ once: true }}
-          transition={{ duration: 1.4, delay: delay + 0.2, ease: [0.22, 1, 0.36, 1] }}
+      {/* The bar grows with scaleX rather than width, so it never triggers layout. */}
+      <div ref={ref} className="mt-4 h-3 overflow-hidden rounded-full bg-fg/10">
+        <div
+          className="h-full w-full origin-left rounded-full transition-transform duration-[1400ms] ease-out"
+          style={
+            {
+              background: colour,
+              transform: `scaleX(${shown ? pct / 100 : 0})`,
+              transitionDelay: `${delay + 0.2}s`,
+            } as CSSProperties
+          }
         />
       </div>
       <p className="pretty mt-3 text-[15px] text-fg/75">{stat.detail}</p>

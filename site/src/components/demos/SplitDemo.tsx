@@ -95,14 +95,20 @@ export function SplitDemo() {
 
           <AnimatePresence>
             {phase === 'scanning' && (
+              // A full-height layer carrying a narrow band, moved by transform
+              // (handed to the compositor) rather than by top.
               <motion.div
-                className="absolute inset-x-0 h-10"
-                style={{ background: 'linear-gradient(to bottom, transparent, rgba(57,208,165,0.45), transparent)' }}
-                initial={{ top: '-15%' }}
-                animate={{ top: '100%' }}
+                className="pointer-events-none absolute inset-0"
+                initial={{ transform: 'translateY(-30%)' }}
+                animate={{ transform: 'translateY(100%)' }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 1.5, ease: 'easeInOut' }}
-              />
+              >
+                <div
+                  className="h-10 w-full"
+                  style={{ background: 'linear-gradient(to bottom, transparent, rgba(57,208,165,0.45), transparent)' }}
+                />
+              </motion.div>
             )}
           </AnimatePresence>
         </div>

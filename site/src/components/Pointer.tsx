@@ -105,8 +105,18 @@ export function TapRipples() {
     layer.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:600;overflow:hidden';
     document.body.appendChild(layer);
 
+    // A ring only for a real tap: a touch that starts a scroll moves, or is
+    // cancelled by the browser, and gets nothing.
+    let start: { id: number; x: number; y: number } | null = null;
     const onDown = (e: PointerEvent) => {
       if (e.pointerType !== 'touch' && e.pointerType !== 'pen') return;
+      start = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    };
+    const onCancel = () => (start = null);
+    const onUp = (e: PointerEvent) => {
+      const s = start;
+      start = null;
+      if (!s || s.id !== e.pointerId || Math.hypot(e.clientX - s.x, e.clientY - s.y) > 10) return;
       const ring = document.createElement('span');
       ring.style.cssText = `position:absolute;left:${e.clientX - 30}px;top:${e.clientY - 30}px;width:60px;height:60px;border-radius:50%;border:3px solid var(--accent);`;
       layer.appendChild(ring);
@@ -120,8 +130,12 @@ export function TapRipples() {
       a.onfinish = () => ring.remove();
     };
     window.addEventListener('pointerdown', onDown, { passive: true });
+    window.addEventListener('pointercancel', onCancel, { passive: true });
+    window.addEventListener('pointerup', onUp, { passive: true });
     return () => {
       window.removeEventListener('pointerdown', onDown);
+      window.removeEventListener('pointercancel', onCancel);
+      window.removeEventListener('pointerup', onUp);
       layer.remove();
     };
   }, [fine, reduced]);

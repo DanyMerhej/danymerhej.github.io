@@ -66,18 +66,52 @@ export function savedHomeScroll(): number | null {
   }
 }
 
+/*
+ * History bookkeeping. Every entry this app pushes carries its position, so
+ * "All work" can go back to the home entry it came from instead of piling a
+ * new one on top (which made the phone's back gesture return to the project).
+ */
+let index = 0;
+const pathAt = new Map<number, string>();
+
+if (typeof window !== 'undefined') {
+  // The app restores scroll itself, behind the curtain. Left to the browser,
+  // the old page would jump to its saved position before being covered.
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+  const state = history.state as { dmIndex?: number } | null;
+  index = state?.dmIndex ?? 0;
+  history.replaceState({ ...(state ?? {}), dmIndex: index }, '');
+  pathAt.set(index, window.location.pathname);
+}
+
 export function navigate(path: string, opts: NavOpts = { colour: '#110E1C' }): void {
   const next = parse(path);
   rememberHomeScroll();
 
   const swap = () => {
-    window.history.pushState({ dm: true }, '', path + (opts.hash ? `#${opts.hash}` : ''));
+    index += 1;
+    pathAt.set(index, path);
+    window.history.pushState({ dm: true, dmIndex: index }, '', path + (opts.hash ? `#${opts.hash}` : ''));
     pendingHash = opts.hash ?? null;
     set(next);
   };
 
   if (runner) runner(swap, opts);
   else swap();
+}
+
+/**
+ * Leaves for `path` by going back when the previous entry is that page, so
+ * the history reads the way the visitor moved; otherwise navigates forward.
+ */
+export function goBackTo(path: string, opts: NavOpts): void {
+  const prev = pathAt.get(index - 1);
+  if (prev !== undefined && parse(prev).name === parse(path).name && prev.replace(/\/$/, '') === path.replace(/\/$/, '')) {
+    pendingPopOpts = opts;
+    history.back();
+  } else {
+    navigate(path, opts);
+  }
 }
 
 /** Where the home page should land after a page change, if anywhere specific. */
@@ -88,13 +122,25 @@ export function takePendingHash(): string | null {
   return h;
 }
 
+/** The curtain's colour and origin for a back() this app started itself. */
+let pendingPopOpts: NavOpts | null = null;
+
 if (typeof window !== 'undefined') {
-  window.addEventListener('popstate', () => {
+  window.addEventListener('popstate', (e: PopStateEvent) => {
+    const state = e.state as { dmIndex?: number } | null;
+    if (typeof state?.dmIndex === 'number') index = state.dmIndex;
     const next = parse(window.location.pathname);
     if (next.name === route.name && (next.name === 'home' || (route.name === 'work' && next.id === route.id))) return;
     rememberHomeScroll();
-    const colour = next.name === 'work' ? (projects.find((p) => p.id === next.id)?.world.bg ?? '#110E1C') : '#FFF4E4';
-    if (runner) runner(() => set(next), { colour });
+
+    const opts = pendingPopOpts ?? {
+      colour: next.name === 'work' ? (projects.find((p) => p.id === next.id)?.world.bg ?? '#110E1C') : '#FFF4E4',
+    };
+    pendingPopOpts = null;
+    // A swipe-back on a phone already animated the page away; a curtain on top
+    // of that would be a second transition for the same gesture.
+    const native = (e as PopStateEvent & { hasUAVisualTransition?: boolean }).hasUAVisualTransition === true;
+    if (runner && !native) runner(() => set(next), opts);
     else set(next);
   });
 }

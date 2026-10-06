@@ -1,4 +1,3 @@
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
 import { useRef } from 'react';
 import type { Project } from '../data/site';
@@ -25,14 +24,7 @@ export function ProductWorld({
   onOpen: (p: Project, x: number, y: number) => void;
 }) {
   const ref = useRef<HTMLElement>(null);
-  const reduced = useReducedMotion();
   useWorld(ref, project.id, project.world);
-
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
-  const rotateX = useTransform(scrollYProgress, [0.05, 0.4, 0.95], [28, 0, -14]);
-  const rotateZ = useTransform(scrollYProgress, [0.05, 0.4, 0.95], [-8, 0, 5]);
-  const y = useTransform(scrollYProgress, [0, 1], [80, -80]);
-  const numberX = useTransform(scrollYProgress, [0, 1], ['10%', '-30%']);
 
   const live = project.status === 'live';
   const site = project.links.find((l) => l.kind === 'site');
@@ -41,17 +33,17 @@ export function ProductWorld({
     <article
       ref={ref}
       id={`work-${project.id}`}
-      className="relative overflow-hidden py-20 md:py-32"
+      className="relative overflow-clip py-20 md:py-32"
       aria-labelledby={`title-${project.id}`}
     >
-      {/* The product number, huge and outlined, drifting across behind. */}
-      <motion.p
+      {/* The product number, huge and outlined, drifting across behind
+          (index.css, .sd-drift: driven by the scroll, on the compositor). */}
+      <p
         aria-hidden="true"
-        className="text-outline pointer-events-none absolute -top-4 right-0 select-none font-display text-[46vw] font-extrabold leading-none opacity-20 md:text-[28vw]"
-        style={reduced ? undefined : { x: numberX }}
+        className="text-outline sd-drift pointer-events-none absolute -top-4 right-0 select-none font-display text-[46vw] font-extrabold leading-none opacity-20 md:text-[28vw]"
       >
         {String(index + 1).padStart(2, '0')}
-      </motion.p>
+      </p>
 
       <div className="gutter relative grid grid-cols-1 items-center gap-12 md:grid-cols-12 md:gap-10">
         <div className="md:col-span-7">
@@ -78,7 +70,7 @@ export function ProductWorld({
 
           {/* Three highlights as cards: on a phone, a row you swipe through. */}
           <Rise className="mt-10">
-            <ul className="no-bar -mx-5 flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
+            <ul className="no-bar -mx-5 flex snap-x snap-mandatory scroll-px-5 gap-3 overflow-x-auto px-5 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:overflow-visible sm:px-0">
               {project.highlights.slice(0, 3).map((h, i) => (
                 <li
                   key={h}
@@ -122,12 +114,10 @@ export function ProductWorld({
           </div>
         </div>
 
-        <motion.div
-          className="md:col-span-5"
-          style={reduced ? undefined : { rotateX, rotateZ, y, transformPerspective: 1200 }}
-        >
+        {/* Tilts up out of the page as it arrives (index.css, .sd-phone). */}
+        <div className="sd-phone md:col-span-5">
           <FlipPhone project={project} />
-        </motion.div>
+        </div>
       </div>
     </article>
   );

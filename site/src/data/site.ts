@@ -65,6 +65,8 @@ export const profile = {
   email: 'danymerhej.work@gmail.com',
   phone: '+961 71 604 930',
   phoneHref: '+96171604930',
+  /** WhatsApp is the quickest way to reach me, so it is the default everywhere. */
+  whatsapp: `https://wa.me/96171604930?text=${encodeURIComponent("Hi Danny, I found you through dannymerhej.com and I'd like to talk about ")}`,
   linkedin: 'https://www.linkedin.com/in/danny-merhej',
   instagram: 'https://instagram.com/danny_merhej',
   instagramHandle: '@danny_merhej',

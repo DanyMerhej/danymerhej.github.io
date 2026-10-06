@@ -6,7 +6,7 @@ import { SplitDemo } from './SplitDemo';
 import { StackDemo } from './StackDemo';
 
 /** One playable toy per product, each a few seconds of what the real thing does. */
-export function Demo({ id }: { id: DemoId }) {
+export function Demo({ id, active = true }: { id: DemoId; active?: boolean }) {
   switch (id) {
     case 'split':
       return <SplitDemo />;
@@ -17,6 +17,6 @@ export function Demo({ id }: { id: DemoId }) {
     case 'rent':
       return <RentDemo />;
     case 'stack':
-      return <StackDemo />;
+      return <StackDemo active={active} />;
   }
 }

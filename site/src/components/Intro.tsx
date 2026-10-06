@@ -1,5 +1,6 @@
 import { animate, motion, useReducedMotion } from 'framer-motion';
 import { useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import { profile, projects, worlds } from '../data/site';
 
 /**
@@ -38,8 +39,8 @@ export function Intro({ onDone }: { onDone: () => void }) {
     <motion.div
       className="fixed inset-0 z-[700] flex items-center justify-center"
       aria-hidden="true"
-      initial={{ y: 0 }}
-      exit={{ y: '-100%' }}
+      initial={{ transform: 'translateY(0%)' }}
+      exit={{ transform: 'translateY(-100%)' }}
       transition={{ duration: 1, ease: [0.76, 0, 0.24, 1] }}
       style={{ background: worlds.night.bg, color: worlds.night.fg }}
     >
@@ -60,22 +61,21 @@ export function Intro({ onDone }: { onDone: () => void }) {
         {projects.map((p, i) => {
           const a = (i / n) * Math.PI * 2 - Math.PI / 2;
           return (
-            <motion.span
+            <span
               key={p.id}
-              className="absolute flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl sm:h-14 sm:w-14"
-              style={{
-                left: `calc(50% + ${Math.cos(a) * 42}% - 1.5rem)`,
-                top: `calc(50% + ${Math.sin(a) * 42}% - 1.5rem)`,
-                background: 'linear-gradient(150deg, #1D1B24, #0B0A10)',
-                boxShadow: `0 0 0 2px ${p.hues[0]}66, 0 10px 30px -8px ${p.hues[0]}`,
-              }}
-              initial={{ scale: 0, rotate: -40 }}
-              animate={{ scale: 1, rotate: 0 }}
-              exit={{ scale: 0, transition: { duration: 0.3 } }}
-              transition={{ type: 'spring', stiffness: 260, damping: 14, delay: 0.1 + i * 0.12 }}
+              className="enter-pop absolute flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl sm:h-14 sm:w-14"
+              style={
+                {
+                  left: `calc(50% + ${Math.cos(a) * 42}% - 1.5rem)`,
+                  top: `calc(50% + ${Math.sin(a) * 42}% - 1.5rem)`,
+                  background: 'linear-gradient(150deg, #1D1B24, #0B0A10)',
+                  boxShadow: `0 0 0 2px ${p.hues[0]}66, 0 10px 30px -8px ${p.hues[0]}`,
+                  '--d': `${0.1 + i * 0.12}s`,
+                } as CSSProperties
+              }
             >
               <img src={p.logo} alt="" width={64} height={64} className="h-full w-full object-contain p-1.5" />
-            </motion.span>
+            </span>
           );
         })}
 

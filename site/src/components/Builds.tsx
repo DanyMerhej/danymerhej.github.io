@@ -1,62 +1,103 @@
-import {
-  motion,
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-  useTransform,
-} from 'framer-motion';
-import type { MotionValue } from 'framer-motion';
 import { ArrowRight, ArrowUpRight } from 'lucide-react';
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { Project } from '../data/site';
-import { projects, statusLabel } from '../data/site';
-import { useInCentre } from '../lib/hooks';
-import { useWorldClaim } from '../lib/world';
+import { projects, statusLabel, worlds } from '../data/site';
+import { hexToRgb, luminance } from '../lib/world';
+import { useMediaQuery, useOnScreen, useWorld } from '../lib/hooks';
 import { Browser, Shot } from './Frames';
 import { Mask } from './Motion';
 
 const builds = projects.filter((p) => p.kind === 'build');
 
 /**
+ * The backdrop behind each card: the brand's own background, darkened where it
+ * is light so the section's light type stays readable on it.
+ */
+const STAGE = builds.map((p) => (luminance(p.world.bg) > 0.3 ? mixHex(p.world.bg, '#15121D', 0.78) : p.world.bg));
+
+function mixHex(a: string, b: string, t: number): string {
+  const [r1, g1, b1] = hexToRgb(a);
+  const [r2, g2, b2] = hexToRgb(b);
+  const m = (x: number, y: number) => Math.round(x + (y - x) * t).toString(16).padStart(2, '0');
+  return `#${m(r1, r2)}${m(g1, g2)}${m(b1, b2)}`;
+}
+
+/** Scroll-driven animations run on the compositor; without them the row is a plain list. */
+function canPin(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    CSS.supports?.('animation-timeline: view()') === true &&
+    !window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  );
+}
+
+/**
  * Storefronts and sites built for brands. The section pins, and scrolling down
  * walks sideways along the row instead; whichever card is in the middle paints
  * the page in that brand's colours.
+ *
+ * The sideways movement is a CSS scroll-driven animation (index.css,
+ * .sd-track), so it is glued to the finger rather than chasing it a frame
+ * late. Script only measures the row on resize and lets an
+ * IntersectionObserver say which card is current.
  */
 export function Builds({ onOpen }: { onOpen: (p: Project, x: number, y: number) => void }) {
-  const reduced = useReducedMotion();
+  const [pinned] = useState(canPin);
   const pin = useRef<HTMLDivElement>(null);
   const track = useRef<HTMLDivElement>(null);
   const [dist, setDist] = useState(0);
-  const [vw, setVw] = useState(390);
   const [idx, setIdx] = useState(0);
 
-  const centred = useInCentre(pin, '-30% 0px -30% 0px');
-  useWorldClaim('builds', builds[idx].world, centred);
+  // One world for the whole section: changing the page's world restyles every
+  // element, which mid-swipe is a stutter. Each brand's colour arrives instead
+  // on a single backdrop layer behind the cards (STAGE, below).
+  useWorld(pin, 'builds', worlds.ink);
+  // A screen ahead of the section, every card's screenshot starts loading and
+  // decoding, so none of it happens mid-swipe.
+  const near = useOnScreen(pin, '100% 0px 100% 0px');
 
+  // The row's length, measured whenever the cards or the window change size.
   useLayoutEffect(() => {
+    if (!pinned) return;
+    const t = track.current;
+    if (!t) return;
     const measure = () => {
-      const t = track.current;
-      if (!t) return;
-      setVw(window.innerWidth);
+      // Hidden behind a project page, the row measures nothing; keep the last
+      // length so the page does not change height while it is away.
+      if (!t.scrollWidth) return;
       setDist(Math.max(0, t.scrollWidth - window.innerWidth));
     };
     measure();
     const ro = new ResizeObserver(measure);
-    if (track.current) ro.observe(track.current);
+    ro.observe(t);
     window.addEventListener('resize', measure);
     return () => {
       ro.disconnect();
       window.removeEventListener('resize', measure);
     };
-  }, []);
+  }, [pinned]);
 
-  const { scrollYProgress } = useScroll({ target: pin, offset: ['start start', 'end end'] });
-  const x = useTransform(scrollYProgress, [0, 1], [0, -dist]);
-
-  useMotionValueEvent(scrollYProgress, 'change', (v) => {
-    const i = Math.max(0, Math.min(builds.length - 1, Math.round(v * (builds.length - 1))));
-    setIdx(i);
-  });
+  // Which card is current: the one crossing a thin vertical line down the
+  // middle of the screen. The observer sees the cards where the scroll-driven
+  // transform has actually put them, and costs no work per frame.
+  useEffect(() => {
+    if (!pinned) return;
+    const t = track.current;
+    if (!t) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (!e.isIntersecting) return;
+          const i = Number((e.target as HTMLElement).dataset.index);
+          if (!Number.isNaN(i)) setIdx(i);
+        });
+      },
+      { rootMargin: '0px -49% 0px -49%' },
+    );
+    t.querySelectorAll('[data-index]').forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [pinned]);
 
   const header = (
     <div className="gutter shrink-0 pt-20 md:pt-24">
@@ -70,8 +111,8 @@ export function Builds({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
             <span className="block">for brands that sell.</span>
           </Mask>
         </div>
-        {!reduced && (
-          <p className="hidden items-center gap-2 text-[14px] text-fg/70 sm:flex">
+        {pinned && (
+          <p className="flex items-center gap-2 text-[14px] text-fg/70">
             Keep scrolling, it goes sideways <ArrowRight className="h-4 w-4" />
           </p>
         )}
@@ -79,13 +120,15 @@ export function Builds({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
     </div>
   );
 
-  if (reduced) {
+  if (!pinned) {
     return (
       <section id="builds" ref={pin} className="py-10">
         {header}
         <div className="gutter mt-10 grid gap-6 md:grid-cols-2">
           {builds.map((p) => (
-            <BuildCard key={p.id} project={p} onOpen={onOpen} />
+            <div key={p.id} className="h-[min(620px,82svh)]">
+              <BuildCard project={p} onOpen={onOpen} />
+            </div>
           ))}
         </div>
       </section>
@@ -94,27 +137,31 @@ export function Builds({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
 
   return (
     <section id="builds" className="relative">
-      <div ref={pin} style={{ height: `calc(100svh + ${dist}px)` }}>
-        <div className="sticky top-0 flex h-[100svh] flex-col overflow-hidden">
+      <div ref={pin} style={{ height: `calc(100svh + ${dist}px)`, viewTimelineName: '--builds' } as CSSProperties}>
+        <div className="sticky top-0 isolate flex h-[100svh] flex-col overflow-hidden">
+          {/* The brand's colour, cross-faded on one layer: a single repaint. */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 -z-10 transition-[background-color] duration-700 ease-out"
+            style={{ background: STAGE[idx] }}
+          />
           {header}
 
           <div className="flex min-h-0 flex-1 items-center pb-24 pt-6 md:pb-16">
-            <motion.div
+            <div
               ref={track}
-              className="flex h-full max-h-[620px] gap-4 px-5 sm:px-8 md:gap-8 lg:px-12"
-              style={{ x }}
+              className="sd-track flex h-full max-h-[620px] gap-4 px-5 will-change-transform sm:px-8 md:gap-8 lg:px-12"
+              style={{ '--dist': `${dist}px` } as CSSProperties}
             >
               {builds.map((p, i) => (
-                <Tilted key={p.id} x={x} index={i} vw={vw}>
-                  <BuildCard project={p} onOpen={onOpen} />
-                </Tilted>
+                <div key={p.id} data-index={i} className="h-full shrink-0">
+                  <BuildCard project={p} onOpen={onOpen} eager={near} />
+                </div>
               ))}
               <div className="flex w-[40vw] shrink-0 items-center md:w-[24vw]">
-                <p className="serif-i text-[clamp(1.6rem,5vw,2.6rem)] leading-tight text-fg/80">
-                  More on the way.
-                </p>
+                <p className="serif-i text-[clamp(1.6rem,5vw,2.6rem)] leading-tight text-fg/80">More on the way.</p>
               </div>
-            </motion.div>
+            </div>
           </div>
 
           {/* Where you are along the row. */}
@@ -122,7 +169,9 @@ export function Builds({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
             {builds.map((p, i) => (
               <span
                 key={p.id}
-                className={`h-1.5 rounded-full bg-fg transition-all duration-500 ${i === idx ? 'w-8' : 'w-1.5 opacity-40'}`}
+                className={`h-1.5 w-8 origin-center rounded-full bg-fg transition-[transform,opacity] duration-500 ${
+                  i === idx ? 'scale-x-100' : 'scale-x-[0.19] opacity-40'
+                }`}
               />
             ))}
           </div>
@@ -132,38 +181,19 @@ export function Builds({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
   );
 }
 
-/** Leans each card away as it moves off centre, so the row reads as a curve. */
-function Tilted({
-  x,
-  index,
-  vw,
-  children,
+function BuildCard({
+  project,
+  onOpen,
+  eager = false,
 }: {
-  x: MotionValue<number>;
-  index: number;
-  vw: number;
-  children: React.ReactNode;
+  project: Project;
+  onOpen: (p: Project, x: number, y: number) => void;
+  eager?: boolean;
 }) {
-  const card = Math.min(vw * 0.84, 560) + 32;
-  const rotateY = useTransform(x, (v) => {
-    const centre = index * card + card / 2 + v - vw / 2;
-    return Math.max(-18, Math.min(18, (-centre / vw) * 22));
-  });
-  const scale = useTransform(x, (v) => {
-    const centre = Math.abs(index * card + card / 2 + v - vw / 2);
-    return 1 - Math.min(centre / vw, 1) * 0.08;
-  });
-
-  return (
-    <motion.div className="h-full shrink-0" style={{ rotateY, scale, transformPerspective: 1100 }}>
-      {children}
-    </motion.div>
-  );
-}
-
-function BuildCard({ project, onOpen }: { project: Project; onOpen: (p: Project, x: number, y: number) => void }) {
   const site = project.links.find((l) => l.kind === 'site');
   const host = site?.label ?? project.name;
+  // Only the variant on screen is fetched early; a hidden one stays lazy.
+  const wide = useMediaQuery('(min-width: 640px)');
 
   return (
     <article
@@ -180,13 +210,13 @@ function BuildCard({ project, onOpen }: { project: Project; onOpen: (p: Project,
         {project.shots?.desktop && (
           <Browser url={host} className="hidden h-full sm:block">
             <div className="aspect-[16/10]">
-              <Shot src={project.shots.desktop} alt={`${project.name} on a desktop`} />
+              <Shot src={project.shots.desktop} alt={`${project.name} on a desktop`} eager={eager && wide} />
             </div>
           </Browser>
         )}
         {project.shots?.mobile && (
           <div className="h-full overflow-hidden rounded-t-[1.25rem] sm:hidden">
-            <Shot src={project.shots.mobile} alt={`${project.name} on a phone`} />
+            <Shot src={project.shots.mobile} alt={`${project.name} on a phone`} eager={eager && !wide} />
           </div>
         )}
       </button>

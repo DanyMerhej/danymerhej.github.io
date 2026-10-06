@@ -7,9 +7,16 @@ import { worlds } from '../data/site';
  *
  * Every section claims a world (background, ink, accent) while it holds the
  * middle of the screen, and the whole page repaints to it: background, text,
- * buttons, the browser's own toolbar colour on a phone. The three values are
- * registered custom properties (see index.css), so the change is a cross-fade
- * rather than a snap.
+ * buttons, the browser's own toolbar colour on a phone.
+ *
+ * The change is built to cost one style pass, not one per frame. The three
+ * variables switch together in a single step; the background change is
+ * softened by a fixed layer behind the content, painted in the old colour and
+ * faded out on the compositor.
+ *
+ * While the page is being scrolled for you (a jump from the dock or the
+ * index), worlds are held: passing through six sections would otherwise mean
+ * six full repaints on the way. The destination's world is applied on arrival.
  *
  * Claims are stacked rather than toggled. Two neighbouring sections both touch
  * the centre line for a moment at their boundary; the one that arrived last
@@ -17,13 +24,44 @@ import { worlds } from '../data/site';
  */
 const stack: { id: string; world: World }[] = [];
 let base: World = worlds.night;
-let current: World = base;
+let current: World | null = null;
 const listeners = new Set<() => void>();
 
+const FADE_MS = 450;
+let fade: HTMLDivElement | null = null;
+let fading: Animation | null = null;
+let held = false;
+
+function fadeLayer(): HTMLDivElement {
+  if (fade && fade.isConnected) return fade;
+  fade = document.createElement('div');
+  fade.setAttribute('aria-hidden', 'true');
+  // Behind every in-flow element, above the page background.
+  fade.style.cssText = 'position:fixed;inset:0;z-index:-1;pointer-events:none;opacity:0;will-change:opacity';
+  document.body.prepend(fade);
+  return fade;
+}
+
 function apply() {
+  if (held) return;
   const next = stack[stack.length - 1]?.world ?? base;
-  if (next === current && document.documentElement.style.getPropertyValue('--bg')) return;
+  if (next === current) return;
+  const prev = current;
   current = next;
+
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (prev && !reduced) {
+    const layer = fadeLayer();
+    // Cancel through the handle: element.getAnimations() would force a style
+    // recalculation of the whole page just to find it.
+    fading?.cancel();
+    layer.style.background = prev.bg;
+    fading = layer.animate([{ opacity: 1 }, { opacity: 0 }], {
+      duration: FADE_MS,
+      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      fill: 'forwards',
+    });
+  }
 
   const root = document.documentElement.style;
   root.setProperty('--bg', next.bg);
@@ -34,6 +72,12 @@ function apply() {
   document.querySelectorAll('meta[name="theme-color"]').forEach((m) => m.setAttribute('content', next.bg));
 
   listeners.forEach((l) => l());
+}
+
+/** Holds the current world while the page is scrolled programmatically. */
+export function holdWorld(on: boolean): void {
+  held = on;
+  if (!on) apply();
 }
 
 export function claimWorld(id: string, world: World): () => void {
@@ -65,8 +109,8 @@ export function useCurrentWorld(): World {
       listeners.add(l);
       return () => listeners.delete(l);
     },
-    () => current,
-    () => current,
+    () => current ?? base,
+    () => current ?? base,
   );
 }
 

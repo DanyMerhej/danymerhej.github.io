@@ -1,11 +1,10 @@
-import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import type { MotionValue } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, Cloud, CloudOff, Lightbulb, Instagram, Radio } from 'lucide-react';
 import { useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import type { Venture } from '../data/site';
 import { capabilities, ventures, worlds } from '../data/site';
-import { useInCentre, useWorld } from '../lib/hooks';
-import { useWorldClaim } from '../lib/world';
+import { useWorld } from '../lib/hooks';
 import { Mask, Rise, Words } from './Motion';
 
 const home = capabilities.find((c) => c.title.toLowerCase().includes('automation'));
@@ -210,18 +209,19 @@ function House() {
 
 function VentureSpread({ venture, index }: { venture: Venture; index: number }) {
   const ref = useRef<HTMLElement>(null);
-  const centred = useInCentre(ref);
-  const world = index === 0 ? worlds.sky : worlds.peach;
-  useWorldClaim(venture.id, world, centred);
-
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] });
+  useWorld(ref, venture.id, index === 0 ? worlds.sky : worlds.peach);
 
   return (
-    <article ref={ref} className="py-20 md:py-28">
+    <article
+      ref={ref}
+      className="py-20 md:py-28"
+      // The lens follows this element's passage through the screen (index.css, .sd-aperture).
+      style={index === 0 ? ({ viewTimelineName: '--lens' } as CSSProperties) : undefined}
+    >
       <div className="gutter grid grid-cols-1 items-center gap-10 md:grid-cols-12">
         <div className={`flex justify-center md:col-span-5 ${index % 2 ? 'md:order-2' : ''}`}>
           {index === 0 ? (
-            <Aperture progress={scrollYProgress} />
+            <Aperture />
           ) : (
             <Sparkle />
           )}
@@ -243,28 +243,27 @@ function VentureSpread({ venture, index }: { venture: Venture; index: number }) 
   );
 }
 
-/** A lens whose iris opens as you scroll to it. */
-function Aperture({ progress }: { progress: MotionValue<number> }) {
-  const reduced = useReducedMotion();
+/**
+ * A lens whose iris opens as you scroll to it. Each blade covers the lens down
+ * to the edge of the opening and slides back to widen it: transforms only,
+ * driven by the scroll on the compositor. Where scroll timelines are missing
+ * the lens simply rests open.
+ */
+function Aperture() {
   const blades = 8;
-  const spin = useTransform(progress, [0, 1], [-70, 70]);
-  // Each blade covers the lens down to the edge of the opening; the opening's
-  // radius grows from a pinhole to wide open as the lens reaches the middle.
-  const height = useTransform(progress, [0.1, 0.48], ['146%', '112%']);
-
   return (
     <div className="relative aspect-square w-[min(78vw,380px)] rounded-full bg-[#0D1A3A] p-[6%] shadow-[0_40px_80px_-30px_rgba(13,26,58,0.8)]">
       <div className="relative h-full w-full overflow-hidden rounded-full bg-gradient-to-br from-[#8FB8FF] via-[#C7D8F5] to-[#FFD9B0]">
-        <motion.div className="absolute inset-0" style={reduced ? undefined : { rotate: spin }}>
+        <div className="sd-aperture absolute inset-0">
           {Array.from({ length: blades }).map((_, i) => (
             <div key={i} className="absolute inset-0" style={{ transform: `rotate(${(360 / blades) * i}deg)` }}>
-              <motion.div
-                className="absolute -left-1/2 -top-full w-[200%] origin-bottom border-b-2 border-[#22345F] bg-[#0D1A3A]"
-                style={{ height: reduced ? '118%' : height, rotate: 14 }}
+              <div
+                className="sd-blade absolute -left-1/2 -top-full h-[146%] w-[200%] origin-bottom border-b-2 border-[#22345F] bg-[#0D1A3A]"
+                style={{ transform: 'translate3d(0, -23.3%, 0) rotate(14deg)' }}
               />
             </div>
           ))}
-        </motion.div>
+        </div>
         <div className="pointer-events-none absolute inset-0 rounded-full shadow-[inset_0_0_0_10px_#0D1A3A]" />
       </div>
       <img
@@ -280,14 +279,9 @@ function Aperture({ progress }: { progress: MotionValue<number> }) {
 }
 
 function Sparkle() {
-  const reduced = useReducedMotion();
   return (
     <div className="relative aspect-square w-[min(78vw,380px)]">
-      <motion.div
-        className="absolute inset-[6%] rounded-[38%] bg-gradient-to-br from-[#F2B8C6] via-[#F7D9C4] to-[#E8D5B7]"
-        animate={reduced ? undefined : { borderRadius: ['38%', '46% 30% 44% 34%', '32% 48% 36% 46%', '38%'], rotate: [0, 8, -6, 0] }}
-        transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
-      />
+      <div className="wobble absolute inset-[6%] rounded-[38%] bg-gradient-to-br from-[#F2B8C6] via-[#F7D9C4] to-[#E8D5B7]" />
       <img
         src={ventures[1].logo}
         alt=""
@@ -297,16 +291,16 @@ function Sparkle() {
         className="absolute inset-[24%] h-[52%] w-[52%] rounded-full bg-[#0B0A10] object-contain p-4"
       />
       {[0, 1, 2, 3, 4].map((i) => (
-        <motion.span
+        <span
           key={i}
           aria-hidden="true"
-          className="absolute text-[28px] text-[#D6336C]"
-          style={{ left: `${[8, 80, 70, 15, 50][i]}%`, top: `${[20, 12, 78, 72, 2][i]}%` }}
-          animate={reduced ? undefined : { scale: [0.6, 1.2, 0.6], rotate: [0, 90, 180], opacity: [0.4, 1, 0.4] }}
-          transition={{ duration: 2.4, repeat: Infinity, delay: i * 0.45 }}
+          className="twinkle absolute text-[28px] text-[#D6336C]"
+          style={
+            { left: `${[8, 80, 70, 15, 50][i]}%`, top: `${[20, 12, 78, 72, 2][i]}%`, '--d': `${i * 0.45}s` } as CSSProperties
+          }
         >
           ✦
-        </motion.span>
+        </span>
       ))}
     </div>
   );

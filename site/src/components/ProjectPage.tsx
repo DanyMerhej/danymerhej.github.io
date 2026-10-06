@@ -1,10 +1,10 @@
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
 import { ArrowLeft, ArrowRight, ArrowUpRight, LayoutGrid } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import type { Project } from '../data/site';
 import { projects, statusLabel } from '../data/site';
-import { useInCentre } from '../lib/hooks';
-import { setBaseWorld, useWorldClaim } from '../lib/world';
+import { useWorld } from '../lib/hooks';
+import { setBaseWorld } from '../lib/world';
 import { FlipPhone } from './FlipPhone';
 import { Browser, Phone, Shot } from './Frames';
 import { LinkIcon } from './LinkIcon';
@@ -37,11 +37,7 @@ export function ProjectPage({
   onBack: (p: Project, x: number, y: number) => void;
   onOpenMenu: () => void;
 }) {
-  const reduced = useReducedMotion();
   const hero = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: hero, offset: ['start start', 'end start'] });
-  const logoRotate = useTransform(scrollYProgress, [0, 1], [0, 40]);
-  const logoY = useTransform(scrollYProgress, [0, 1], [0, 120]);
 
   const i = projects.findIndex((p) => p.id === project.id);
   const next = projects[(i + 1) % projects.length];
@@ -65,31 +61,31 @@ export function ProjectPage({
     <main className="relative">
       {/* Bar */}
       <div className="fixed inset-x-0 top-0 z-[120]">
-        <div className="gutter flex h-16 items-center justify-between gap-3" style={{ maxWidth: 'none' }}>
+        <div className="gutter flex h-16 items-center justify-between gap-2" style={{ maxWidth: 'none' }}>
           <button
             type="button"
             onClick={(e) => onBack(project, e.clientX, e.clientY)}
-            className="flex h-11 items-center gap-2 rounded-full bg-bg/70 px-4 text-[14px] font-semibold backdrop-blur-xl"
+            className="glass flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full px-4 text-[14px] font-semibold"
           >
             <ArrowLeft className="h-4 w-4" /> All work
           </button>
-          <div className="flex items-center gap-2">
+          <div className="glass flex shrink-0 items-center rounded-full p-1">
             <button
               type="button"
               onClick={(e) => onOpen(prev, e.clientX, e.clientY)}
               aria-label={`Previous: ${prev.name}`}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-bg/70 backdrop-blur-xl"
+              className="flex h-9 w-9 items-center justify-center rounded-full"
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <span className="rounded-full bg-bg/70 px-3 py-2.5 text-[13px] font-semibold tabular-nums backdrop-blur-xl">
+            <span className="whitespace-nowrap px-1 text-[13px] font-semibold tabular-nums">
               {i + 1} / {projects.length}
             </span>
             <button
               type="button"
               onClick={(e) => onOpen(next, e.clientX, e.clientY)}
               aria-label={`Next: ${next.name}`}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-bg/70 backdrop-blur-xl"
+              className="flex h-9 w-9 items-center justify-center rounded-full"
             >
               <ArrowRight className="h-4 w-4" />
             </button>
@@ -97,7 +93,7 @@ export function ProjectPage({
               type="button"
               onClick={onOpenMenu}
               aria-label="Open the index"
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-bg/70 backdrop-blur-xl"
+              className="ml-0.5 flex h-9 w-9 items-center justify-center rounded-full border-l border-fg/15"
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
@@ -106,21 +102,25 @@ export function ProjectPage({
       </div>
 
       {/* Hero */}
-      <div ref={hero} className="gutter relative pb-16 pt-28 md:pb-24 md:pt-36">
-        <motion.span
-          className="absolute right-5 top-24 flex h-24 w-24 items-center justify-center overflow-hidden rounded-[1.8rem] sm:h-32 sm:w-32 md:right-12 md:top-32 md:h-44 md:w-44 md:rounded-[2.4rem]"
-          style={{
-            background: 'linear-gradient(150deg, #1D1B24, #0B0A10)',
-            boxShadow: `0 30px 60px -20px ${project.hues[0]}, inset 0 0 0 2px ${project.hues[0]}55`,
-            rotate: reduced ? 0 : logoRotate,
-            y: reduced ? 0 : logoY,
-          }}
-          initial={{ scale: 0, rotate: -30 }}
-          animate={{ scale: 1 }}
-          transition={{ type: 'spring', stiffness: 160, damping: 13, delay: 0.25 }}
-        >
-          <img src={project.logo} alt="" width={320} height={320} className="h-full w-full object-contain p-3 md:p-5" />
-        </motion.span>
+      <div
+        ref={hero}
+        className="gutter relative pb-16 pt-28 md:pb-24 md:pt-36"
+        style={{ viewTimelineName: '--project-hero' } as CSSProperties}
+      >
+        {/* Two layers, so the two motions never fight over one transform: the
+            outer rolls away with the scroll (index.css, .sd-roll), the inner
+            pops in once when the page opens. */}
+        <span className="sd-roll absolute right-5 top-24 sm:right-8 md:right-12 md:top-32">
+          <span
+            className="enter-pop flex h-24 w-24 items-center justify-center overflow-hidden rounded-[1.8rem] sm:h-32 sm:w-32 md:h-44 md:w-44 md:rounded-[2.4rem]"
+            style={{
+              background: 'linear-gradient(150deg, #1D1B24, #0B0A10)',
+              boxShadow: `0 30px 60px -20px ${project.hues[0]}, inset 0 0 0 2px ${project.hues[0]}55`,
+            }}
+          >
+            <img src={project.logo} alt="" width={320} height={320} className="h-full w-full object-contain p-3 md:p-5" />
+          </span>
+        </span>
 
         <div className="flex flex-wrap gap-2 pr-28 sm:pr-40">
           <span className="eyebrow border-fg/30">{project.kind === 'product' ? 'My product' : 'Client build'}</span>
@@ -130,22 +130,15 @@ export function ProjectPage({
         <h1 className="display h-project mt-8 max-w-[14ch]">
           <Letters text={project.name} delay={0.2} />
         </h1>
-        <motion.p
-          className="serif-i mt-5 text-[clamp(1.6rem,6.5vw,3rem)] leading-[1.08]"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.8 }}
+        <p
+          className="enter-rise serif-i mt-5 text-[clamp(1.6rem,6.5vw,3rem)] leading-[1.08]"
+          style={{ '--d': '0.45s' } as CSSProperties}
         >
           {project.tagline}
-        </motion.p>
-        <motion.p
-          className="lede pretty mt-6 max-w-2xl"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6, duration: 0.8 }}
-        >
+        </p>
+        <p className="enter-rise lede pretty mt-6 max-w-2xl" style={{ '--d': '0.55s' } as CSSProperties}>
           {project.blurb}
-        </motion.p>
+        </p>
 
         <dl className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
@@ -154,16 +147,10 @@ export function ProjectPage({
             ['Status', statusLabel[project.status]],
             ['Built with', `${project.stack.length} tools`],
           ].map(([k, v], n) => (
-            <motion.div
-              key={k}
-              className="card bg-fg/[0.08] p-4"
-              initial={{ opacity: 0, y: 24 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 + n * 0.06, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            >
+            <div key={k} className="enter-rise card bg-fg/[0.08] p-4" style={{ '--d': `${0.65 + n * 0.06}s` } as CSSProperties}>
               <dt className="text-[12.5px] font-semibold opacity-60">{k}</dt>
               <dd className="mt-1 text-[15.5px] font-semibold leading-snug">{v}</dd>
-            </motion.div>
+            </div>
           ))}
         </dl>
 
@@ -247,24 +234,18 @@ export function ProjectPage({
       {/* Built with */}
       <section className="gutter py-16 md:py-24">
         <h2 className="display text-[clamp(2.4rem,9vw,4.8rem)]">Built with</h2>
-        <motion.ul
-          className="mt-8 flex flex-wrap gap-2.5"
-          initial="hidden"
-          whileInView="shown"
-          viewport={{ once: true, margin: '-10%' }}
-          transition={{ staggerChildren: 0.04 }}
-        >
-          {project.stack.map((s) => (
-            <motion.li
+        <ul className="mt-8 flex flex-wrap gap-2.5">
+          {project.stack.map((s, n) => (
+            <Rise
               key={s}
-              variants={{ hidden: { opacity: 0, scale: 0.5, rotate: -8 }, shown: { opacity: 1, scale: 1, rotate: 0 } }}
-              transition={{ type: 'spring', stiffness: 360, damping: 18 }}
+              as="li"
+              delay={Math.min(n, 12) * 0.04}
               className="rounded-2xl bg-fg px-4 py-3 text-[16px] font-semibold text-bg"
             >
               {s}
-            </motion.li>
+            </Rise>
           ))}
-        </motion.ul>
+        </ul>
       </section>
 
       <NextBand next={next} onOpen={onOpen} />
@@ -275,8 +256,7 @@ export function ProjectPage({
 /** The next project, already in its own colour, waiting at the bottom of the page. */
 function NextBand({ next, onOpen }: { next: Project; onOpen: (p: Project, x: number, y: number) => void }) {
   const ref = useRef<HTMLButtonElement>(null);
-  const centred = useInCentre(ref, '-40% 0px -40% 0px');
-  useWorldClaim(`next-${next.id}`, next.world, centred);
+  useWorld(ref, `next-${next.id}`, next.world);
 
   return (
     <button

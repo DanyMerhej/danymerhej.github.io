@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import type { Project } from '../data/site';
 import { chapters, profile, projects } from '../data/site';
 import { useOverlayHistory, useScrollLock } from '../lib/hooks';
+import { WhatsAppIcon } from './Icons';
 import { scrollToId, scrollToY } from '../lib/smooth';
 
 const EASE = [0.76, 0, 0.24, 1] as const;
@@ -52,11 +53,12 @@ export function Menu({
           role="dialog"
           aria-modal="true"
           aria-label="Index"
-          className="fixed inset-0 z-[300] overflow-y-auto bg-fg text-bg"
-          initial={{ clipPath: 'inset(0 0 100% 0 round 0 0 50% 50%)' }}
-          animate={{ clipPath: 'inset(0 0 0% 0 round 0 0 0% 0%)' }}
-          exit={{ clipPath: 'inset(0 0 100% 0 round 0 0 50% 50%)' }}
-          transition={{ duration: 0.75, ease: EASE }}
+          className="fixed inset-0 z-[300] overflow-y-auto overscroll-contain bg-fg text-bg"
+          // A whole transform string, so framer hands it to the compositor.
+          initial={{ transform: 'translateY(-100%)' }}
+          animate={{ transform: 'translateY(0%)' }}
+          exit={{ transform: 'translateY(-100%)' }}
+          transition={{ duration: 0.6, ease: EASE }}
         >
           <div className="gutter flex h-16 items-center justify-between">
             <span className="font-display text-[16px] font-bold">Index</span>
@@ -85,9 +87,9 @@ export function Menu({
                         })
                       }
                       className="group flex w-full items-baseline gap-4 py-1.5 text-left"
-                      initial={{ y: '100%' }}
-                      animate={{ y: 0 }}
-                      transition={{ duration: 0.7, delay: 0.25 + i * 0.045, ease: [0.22, 1, 0.36, 1] }}
+                      initial={{ transform: 'translateY(100%)' }}
+                      animate={{ transform: 'translateY(0%)' }}
+                      transition={{ duration: 0.7, delay: 0.2 + i * 0.04, ease: [0.22, 1, 0.36, 1] }}
                     >
                       <span className="w-6 font-mono text-[12px] opacity-50">{String(i + 1).padStart(2, '0')}</span>
                       <span className="display text-[clamp(2.2rem,10vw,4.2rem)] leading-[1.02] transition-[font-stretch,transform] duration-500 group-hover:translate-x-2 [font-stretch:92%] group-hover:[font-stretch:75%]">
@@ -102,9 +104,14 @@ export function Menu({
             <div className="space-y-10 md:col-span-5 md:col-start-8">
               <ProjectList title="My products" list={products} onPick={(p, x, y) => after(() => onOpenProject(p, x, y))} />
               <ProjectList title="Client builds" list={builds} onPick={(p, x, y) => after(() => onOpenProject(p, x, y))} />
-              <a href={`mailto:${profile.email}`} className="btn w-full bg-bg text-fg">
-                <Mail className="h-4 w-4" /> Write to me
-              </a>
+              <div className="grid gap-2">
+                <a href={profile.whatsapp} target="_blank" rel="noreferrer noopener" className="btn-whatsapp w-full">
+                  <WhatsAppIcon className="h-5 w-5" /> Message me on WhatsApp
+                </a>
+                <a href={`mailto:${profile.email}`} className="btn w-full bg-bg text-fg">
+                  <Mail className="h-4 w-4" /> Or send an email
+                </a>
+              </div>
             </div>
           </div>
         </motion.div>
@@ -129,8 +136,8 @@ function ProjectList({
         {list.map((p, i) => (
           <motion.li
             key={p.id}
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, transform: 'translateX(20px)' }}
+            animate={{ opacity: 1, transform: 'translateX(0px)' }}
             transition={{ duration: 0.5, delay: 0.35 + i * 0.04 }}
           >
             <button

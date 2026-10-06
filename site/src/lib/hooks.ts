@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { World } from '../data/site';
 import { pauseScroll } from './smooth';
-import { useWorldClaim } from './world';
+import { claimWorld } from './world';
 
 export function useMediaQuery(query: string): boolean {
   const [matches, setMatches] = useState(() =>
@@ -24,19 +24,29 @@ export function useFinePointer(): boolean {
   return useMediaQuery('(hover: hover) and (pointer: fine)');
 }
 
-/** Locks page scroll while an overlay is open. */
+/**
+ * Locks page scroll while an overlay is open. Counted, so two overlays at once
+ * (the index over a project page, say) unlock only when the last one closes.
+ */
+let locks = 0;
+let savedOverflow = '';
+
 export function useScrollLock(locked: boolean): void {
   useEffect(() => {
     if (!locked) return;
-    const previous = document.body.style.overflow;
-    const scrollbar = window.innerWidth - document.documentElement.clientWidth;
-    document.body.style.overflow = 'hidden';
-    if (scrollbar > 0) document.body.style.paddingRight = `${scrollbar}px`;
-    pauseScroll(true);
+    if (locks++ === 0) {
+      savedOverflow = document.body.style.overflow;
+      const scrollbar = window.innerWidth - document.documentElement.clientWidth;
+      document.body.style.overflow = 'hidden';
+      if (scrollbar > 0) document.body.style.paddingRight = `${scrollbar}px`;
+      pauseScroll(true);
+    }
     return () => {
-      document.body.style.overflow = previous;
-      document.body.style.paddingRight = '';
-      pauseScroll(false);
+      if (--locks === 0) {
+        document.body.style.overflow = savedOverflow;
+        document.body.style.paddingRight = '';
+        pauseScroll(false);
+      }
     };
   }, [locked]);
 }
@@ -82,11 +92,33 @@ export function useOnScreen<T extends Element>(ref: React.RefObject<T>, margin =
   return on;
 }
 
-/** Paints the page in `world` while the element holds the middle of the screen. */
-export function useWorld<T extends HTMLElement>(ref: React.RefObject<T>, id: string, world: World): boolean {
-  const centred = useInCentre(ref);
-  useWorldClaim(id, world, centred);
-  return centred;
+/**
+ * Paints the page in `world` while the element holds the middle of the screen.
+ *
+ * Stateless on purpose: the observer claims and releases the world directly,
+ * so crossing a section boundary never re-renders the section.
+ */
+export function useWorld<T extends HTMLElement>(ref: React.RefObject<T>, id: string, world: World): void {
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let release: (() => void) | null = null;
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting && !release) release = claimWorld(id, world);
+        else if (!e.isIntersecting && release) {
+          release();
+          release = null;
+        }
+      },
+      { rootMargin: '-49% 0px -49% 0px' },
+    );
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      release?.();
+    };
+  }, [ref, id, world]);
 }
 
 /** Tracks which registered section is currently in view. */
@@ -123,26 +155,52 @@ const INTRO_KEY = 'dm-intro-seen';
  * The opening loader plays once per browser session. Coming back from a
  * project link should not replay it.
  */
-export function useIntro(): [boolean, () => void] {
-  const [playing, setPlaying] = useState(() => {
+const intro = {
+  playing: (() => {
     try {
       return sessionStorage.getItem(INTRO_KEY) !== '1';
     } catch {
       return true;
     }
-  });
+  })(),
+  listeners: new Set<() => void>(),
+};
 
-  const finish = useCallback(() => {
-    setPlaying(false);
-    try {
-      sessionStorage.setItem(INTRO_KEY, '1');
-    } catch {
-      /* nothing to remember, it simply replays next time */
-    }
-  }, []);
+function finishIntro() {
+  if (!intro.playing) return;
+  intro.playing = false;
+  try {
+    sessionStorage.setItem(INTRO_KEY, '1');
+  } catch {
+    /* nothing to remember, it simply replays next time */
+  }
+  intro.listeners.forEach((l) => l());
+}
 
+/**
+ * Whether the opening is on screen. A tiny shared store rather than a prop,
+ * so its ending re-renders only what asks about it, not the whole page.
+ */
+export function useIntroPlaying(): boolean {
+  return useSyncExternalStore(
+    (l) => {
+      intro.listeners.add(l);
+      return () => intro.listeners.delete(l);
+    },
+    () => intro.playing,
+    () => intro.playing,
+  );
+}
+
+/** Read once, at mount: was the intro still running when this appeared? */
+export function introIsPlaying(): boolean {
+  return intro.playing;
+}
+
+export function useIntro(): [boolean, () => void] {
+  const playing = useIntroPlaying();
   useScrollLock(playing);
-  return [playing, finish];
+  return [playing, finishIntro];
 }
 
 /**

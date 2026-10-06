@@ -1,4 +1,4 @@
-import { motion, useReducedMotion } from 'framer-motion';
+import { useReducedMotion } from 'framer-motion';
 import { Hand, RotateCcw, Smartphone, Sparkles } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import type { Project } from '../data/site';
@@ -27,6 +27,7 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
   const coarse = useMediaQuery('(pointer: coarse)');
   const [started, setStarted] = useState(false);
   const [tilt, setTilt] = useState(false);
+  const wantTilt = useRef(false);
   const openRef = useRef(onOpen);
   openRef.current = onOpen;
 
@@ -66,8 +67,10 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
     };
 
     function run(M: MatterNS, root: HTMLDivElement) {
-      const { Engine, Bodies, Body, Composite, Constraint } = M;
-      const engine = Engine.create({ enableSleeping: false });
+      const { Engine, Bodies, Body, Composite, Constraint, Sleeping } = M;
+      // Bodies fall asleep once the pile settles, and the loop then stops
+      // altogether until something touches, shakes or tilts the box.
+      const engine = Engine.create({ enableSleeping: true });
       engine.gravity.y = 1;
 
       let W = root.clientWidth;
@@ -111,6 +114,8 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
         const down = (e: PointerEvent) => {
           e.preventDefault();
           item.node.setPointerCapture(e.pointerId);
+          Sleeping.set(item.body, false);
+          kick();
           const p = local(e);
           const c = Constraint.create({
             pointA: p,
@@ -157,6 +162,9 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
       });
 
       const resize = () => {
+        // Hidden (the home page stays mounted behind a project page): keep the
+        // last real size rather than squashing the box to nothing.
+        if (!root.clientWidth || !root.clientHeight) return;
         W = root.clientWidth;
         H = root.clientHeight;
         Body.setPosition(floor, { x: W / 2, y: H + T / 2 });
@@ -165,6 +173,7 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
         items.forEach(({ body, w }) => {
           if (body.position.x > W - w / 2) Body.setPosition(body, { x: W - w / 2, y: body.position.y });
         });
+        wakeAll();
       };
       const ro = new ResizeObserver(resize);
       ro.observe(root);
@@ -173,23 +182,34 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
       const onTilt = (e: DeviceOrientationEvent) => {
         const g = Math.max(-1, Math.min(1, (e.gamma ?? 0) / 40));
         const b = Math.max(-1, Math.min(1, (e.beta ?? 45) / 40));
+        const changed = Math.abs(g - engine.gravity.x) + Math.abs(b - engine.gravity.y) > 0.05;
         engine.gravity.x = g;
         engine.gravity.y = b;
+        if (changed) wakeAll();
+      };
+
+      const wakeAll = () => {
+        items.forEach(({ body }) => Sleeping.set(body, false));
+        kick();
       };
 
       api.current = {
         shake() {
           items.forEach(({ body }) => {
+            Sleeping.set(body, false);
             Body.setVelocity(body, { x: (Math.random() - 0.5) * 30, y: -12 - Math.random() * 20 });
             Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.6);
           });
+          kick();
         },
         reset() {
           items.forEach(({ body, w, h }, i) => {
+            Sleeping.set(body, false);
             Body.setPosition(body, { x: w / 2 + Math.random() * Math.max(W - w, 1), y: -h - i * 40 });
             Body.setVelocity(body, { x: 0, y: 0 });
             Body.setAngle(body, (Math.random() - 0.5) * 1.2);
           });
+          kick();
         },
         tilt(on) {
           if (on) window.addEventListener('deviceorientation', onTilt);
@@ -213,31 +233,46 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
       let acc = 0;
       const STEP = 1000 / 60;
       let running = false;
+      const shown = items.map(() => '');
       const loop = (now: number) => {
         if (!visible) {
           running = false;
           return;
         }
         // Fixed steps at 60 per second, whatever the screen's refresh rate.
-        acc += Math.min(now - last, 50);
+        acc += Math.min(now - last, 34);
         last = now;
+        let stepped = false;
         while (acc >= STEP) {
           Engine.update(engine, STEP);
           acc -= STEP;
+          stepped = true;
         }
-        for (const { node, body, w, h } of items) {
-          node.style.transform = `translate3d(${(body.position.x - w / 2).toFixed(1)}px, ${(body.position.y - h / 2).toFixed(1)}px, 0) rotate(${body.angle.toFixed(3)}rad)`;
-          if (node.style.opacity !== '1') node.style.opacity = '1';
+        if (stepped) {
+          items.forEach(({ node, body, w, h }, i) => {
+            const t = `translate3d(${(body.position.x - w / 2).toFixed(1)}px, ${(body.position.y - h / 2).toFixed(1)}px, 0) rotate(${body.angle.toFixed(3)}rad)`;
+            if (t !== shown[i]) {
+              node.style.transform = t;
+              shown[i] = t;
+            }
+            if (node.style.opacity !== '1') node.style.opacity = '1';
+          });
+        }
+        if (drags.size === 0 && items.every(({ body }) => body.isSleeping)) {
+          running = false;
+          return;
         }
         frame = requestAnimationFrame(loop);
       };
       function kick() {
-        if (running) return;
+        if (running || !visible) return;
         running = true;
         last = performance.now();
         frame = requestAnimationFrame(loop);
       }
       kick();
+      // Tilt may have been switched on before the physics had loaded.
+      if (wantTilt.current) api.current.tilt(true);
 
       return () => {
         cancelAnimationFrame(frame);
@@ -263,14 +298,23 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
         }
       }
     }
+    wantTilt.current = next;
     api.current?.tilt(next);
     setTilt(next);
   };
 
   const physics = !reduced;
+  // On a phone a vertical swipe over the pile scrolls the page (sideways
+  // throws and taps still work); with tilt on, the logos take every gesture.
+  const grabAction = coarse && !tilt ? 'pan-y' : 'none';
 
   return (
     <div>
+      {physics && (
+        <p className="mb-3 flex items-center gap-2 text-[15px] text-fg/70">
+          <Hand className="h-4 w-4 shrink-0" /> Grab and throw the logos. Tap one to open it.
+        </p>
+      )}
       <div
         ref={box}
         className={`relative overflow-hidden rounded-[2rem] border-2 border-fg/10 bg-fg/[0.05] ${
@@ -304,7 +348,7 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
               }}
               className={`${physics ? 'absolute left-0 top-0 opacity-0' : 'relative'} flex h-[74px] w-[74px] cursor-grab items-center justify-center overflow-hidden rounded-[22px] sm:h-[104px] sm:w-[104px] sm:rounded-[30px]`}
               style={{
-                touchAction: 'none',
+                touchAction: grabAction,
                 background: 'linear-gradient(150deg, #1D1B24, #0B0A10)',
                 boxShadow: `0 14px 30px -12px ${p.hues[0]}aa, inset 0 0 0 2px ${p.hues[0]}55`,
               }}
@@ -327,7 +371,7 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
               aria-hidden="true"
               className={`${physics ? 'absolute left-0 top-0 opacity-0' : 'relative'} flex h-[42px] cursor-grab select-none items-center rounded-full px-5 font-display text-[17px] font-bold sm:h-[54px] sm:px-7 sm:text-[22px]`}
               style={{
-                touchAction: 'none',
+                touchAction: grabAction,
                 background: projects[i % projects.length].hues[0],
                 color: '#14101F',
               }}
@@ -339,32 +383,37 @@ export function ToyBox({ onOpen }: { onOpen: (p: Project, x: number, y: number) 
       </div>
 
       {physics && (
-        <motion.div
-          className="mt-4 flex flex-wrap items-center gap-2"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-        >
-          <button type="button" onClick={() => api.current?.shake()} className="btn-solid min-h-[2.75rem] px-5 text-[15px]">
-            <Sparkles className="h-4 w-4" /> Shake the box
+        // Equal columns and labels that never change length, so toggling tilt
+        // cannot push the other buttons around.
+        <div className={`mt-4 grid gap-2 ${coarse ? 'grid-cols-3' : 'grid-cols-2 sm:max-w-md'}`}>
+          <button type="button" onClick={() => api.current?.shake()} className="btn-solid min-h-[2.9rem] gap-2 px-2 text-[15px]">
+            <Sparkles className="h-4 w-4 shrink-0" /> Shake
           </button>
           {coarse && (
             <button
               type="button"
               onClick={toggleTilt}
               aria-pressed={tilt}
-              className={`btn min-h-[2.75rem] border-2 px-5 text-[15px] ${tilt ? 'border-fg bg-fg text-bg' : 'border-fg/20'}`}
+              aria-label={tilt ? 'Tilt is on: tap to turn it off' : 'Use tilt: tip your phone to move the logos'}
+              className={`btn min-h-[2.9rem] gap-2 border-2 px-2 text-[15px] ${tilt ? 'border-fg bg-fg text-bg' : 'border-fg/20'}`}
             >
-              <Smartphone className="h-4 w-4" /> {tilt ? 'Tilt is on' : 'Tilt your phone'}
+              <Smartphone className="h-4 w-4 shrink-0" /> Tilt
+              <span
+                aria-hidden="true"
+                className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${tilt ? 'bg-accent' : 'bg-fg/20'}`}
+              >
+                <span
+                  className={`absolute top-0.5 h-3 w-3 rounded-full bg-current transition-transform duration-300 ${
+                    tilt ? 'translate-x-[13px]' : 'translate-x-0.5'
+                  }`}
+                />
+              </span>
             </button>
           )}
-          <button type="button" onClick={() => api.current?.reset()} className="btn-ghost min-h-[2.75rem] px-5 text-[15px]">
-            <RotateCcw className="h-4 w-4" /> Drop again
+          <button type="button" onClick={() => api.current?.reset()} className="btn-ghost min-h-[2.9rem] gap-2 px-2 text-[15px]">
+            <RotateCcw className="h-4 w-4 shrink-0" /> Reset
           </button>
-          <span className="ml-1 inline-flex items-center gap-1.5 text-[14px] text-fg/60">
-            <Hand className="h-4 w-4" /> Tap a logo to open it
-          </span>
-        </motion.div>
+        </div>
       )}
     </div>
   );

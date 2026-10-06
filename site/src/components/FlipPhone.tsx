@@ -20,6 +20,9 @@ export function FlipPhone({ project, className }: { project: Project; className?
   const shot = project.shots?.mobile;
   // With no screenshot to show, the toy is the front.
   const [playing, setPlaying] = useState(!shot);
+  // Built on the first play and then kept, so flipping back shows the toy
+  // turning away (not a blank screen) and its state survives the next look.
+  const [built, setBuilt] = useState(!shot);
   const demo = project.demo;
 
   const face = 'absolute inset-0 [backface-visibility:hidden] [-webkit-backface-visibility:hidden]';
@@ -29,8 +32,11 @@ export function FlipPhone({ project, className }: { project: Project; className?
       <div className="relative" style={{ perspective: 1400 }}>
         <motion.div
           className="relative [transform-style:preserve-3d]"
-          animate={{ rotateY: playing && shot ? 180 : 0 }}
-          transition={reduced ? { duration: 0 } : { type: 'spring', stiffness: 120, damping: 16 }}
+          // A whole transform string with a tween, which framer hands to the
+          // compositor; a spring on rotateY would run on the main thread.
+          initial={false}
+          animate={{ transform: playing && shot ? 'rotateY(180deg)' : 'rotateY(0deg)' }}
+          transition={reduced ? { duration: 0 } : { duration: 0.75, ease: [0.34, 1.3, 0.64, 1] }}
         >
           {/* Front */}
           <div
@@ -53,9 +59,9 @@ export function FlipPhone({ project, className }: { project: Project; className?
             >
               <Phone glow={project.hues[1]}>
                 {/* Only build the toy once it is wanted. */}
-                {(playing || !shot) && (
-                  <Suspense fallback={<div className="h-full w-full animate-pulse bg-black/5" />}>
-                    <Demo id={demo} />
+                {built && (
+                  <Suspense fallback={<div className="h-full w-full bg-black/5" />}>
+                    <Demo id={demo} active={playing} />
                   </Suspense>
                 )}
               </Phone>
@@ -67,7 +73,10 @@ export function FlipPhone({ project, className }: { project: Project; className?
       {demo && shot && (
         <button
           type="button"
-          onClick={() => setPlaying((p) => !p)}
+          onClick={() => {
+            setBuilt(true);
+            setPlaying((p) => !p);
+          }}
           className="btn-solid mt-6 min-h-[2.9rem] px-5 text-[15px]"
           aria-pressed={playing}
         >

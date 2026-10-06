@@ -1,23 +1,72 @@
-import { motion, useReducedMotion } from 'framer-motion';
-import { Fragment } from 'react';
-import type { ReactNode } from 'react';
-
-const EASE = [0.22, 1, 0.36, 1] as const;
+import { Fragment, createElement, useEffect, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 /**
- * Text that rises out from behind a mask, line by line.
+ * Reveals. Each component flips a data-shown flag the first time it scrolls
+ * into view, and CSS in index.css does the moving with transform and opacity
+ * transitions, which the compositor runs. Scrolling past a paragraph never
+ * costs the main thread a frame.
  *
- * The trigger sits on the clipping wrapper, not on the span that moves: an
- * IntersectionObserver measures against every ancestor's clip rect, so a child
- * parked 110% below an `overflow-hidden` parent never counts as visible and
- * would wait forever to be told to animate. The wrapper is observed and the
- * span follows through a variant.
+ * One IntersectionObserver per margin is shared by every reveal on the page.
  */
+type Done = () => void;
+const observers = new Map<string, { io: IntersectionObserver; cbs: Map<Element, Done> }>();
+
+function observeOnce(el: Element, margin: string, cb: Done): () => void {
+  let entry = observers.get(margin);
+  if (!entry) {
+    const cbs = new Map<Element, Done>();
+    const io = new IntersectionObserver(
+      (records) => {
+        records.forEach((r) => {
+          if (!r.isIntersecting) return;
+          const done = cbs.get(r.target);
+          cbs.delete(r.target);
+          io.unobserve(r.target);
+          done?.();
+        });
+      },
+      { rootMargin: margin },
+    );
+    entry = { io, cbs };
+    observers.set(margin, entry);
+  }
+  entry.cbs.set(el, cb);
+  entry.io.observe(el);
+  const e = entry;
+  return () => {
+    e.cbs.delete(el);
+    e.io.unobserve(el);
+  };
+}
+
+/** True from the first moment the element is on screen. */
+export function useShown<T extends Element>(margin = '0px 0px -8% 0px', immediate = false) {
+  const ref = useRef<T>(null);
+  const [shown, setShown] = useState(immediate);
+
+  useEffect(() => {
+    if (immediate) {
+      // Let the hidden state paint first, so the entrance actually plays.
+      const id = requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)));
+      return () => cancelAnimationFrame(id);
+    }
+    const el = ref.current;
+    if (!el) return;
+    return observeOnce(el, margin, () => setShown(true));
+  }, [margin, immediate]);
+
+  return [ref, shown] as const;
+}
+
+const delay = (s: number) => ({ '--d': `${s}s` }) as CSSProperties;
+
+/** Text that rises out from behind a mask. */
 export function Mask({
   children,
-  delay = 0,
+  delay: d = 0,
   className,
-  as: Tag = 'div',
+  as = 'div',
   immediate = false,
 }: {
   children: ReactNode;
@@ -27,144 +76,77 @@ export function Mask({
   /** Play on mount rather than on scroll, for anything above the fold. */
   immediate?: boolean;
 }) {
-  const reduced = useReducedMotion();
-  const MotionTag = motion[Tag];
-
-  const variants = reduced
-    ? { hidden: { opacity: 0 }, shown: { opacity: 1 } }
-    : { hidden: { y: '110%' }, shown: { y: 0 } };
-
-  return (
-    <MotionTag
-      // The padding gives descenders room inside the clip; the negative margin
-      // gives the space back so the line still sits where the type says.
-      className={`-mb-[0.16em] overflow-hidden pb-[0.16em] ${className ?? ''}`}
-      initial="hidden"
-      {...(immediate
-        ? { animate: 'shown' }
-        : { whileInView: 'shown', viewport: { once: true, margin: '-8% 0px -8% 0px' } })}
-    >
-      <motion.span
-        className="block"
-        variants={variants}
-        transition={{ duration: 1.05, delay, ease: EASE }}
-      >
-        {children}
-      </motion.span>
-    </MotionTag>
+  const [ref, shown] = useShown<HTMLElement>('0px 0px -8% 0px', immediate);
+  return createElement(
+    as,
+    { ref, className: `rv-mask ${className ?? ''}`, 'data-shown': shown },
+    <span className="rv-in" style={delay(d)}>
+      {children}
+    </span>,
   );
 }
 
-/** Splits a sentence and lets the words arrive in sequence. */
+/**
+ * A paragraph that fades up as it arrives. One element, not one per word:
+ * every element on the page is restyled when the colour world changes, and a
+ * span per word doubled the cost of that for no visible gain.
+ */
 export function Words({
   text,
   className,
-  delay = 0,
-  stagger = 0.028,
+  delay: d = 0,
 }: {
   text: string;
   className?: string;
   delay?: number;
-  stagger?: number;
 }) {
-  const reduced = useReducedMotion();
-  const words = text.split(' ');
+  const [ref, shown] = useShown<HTMLSpanElement>('0px 0px -10% 0px');
+  return (
+    <span ref={ref} className={`rv-rise block ${className ?? ''}`} data-shown={shown} style={delay(d)}>
+      {text}
+    </span>
+  );
+}
 
-  if (reduced) return <span className={className}>{text}</span>;
+/** A word whose letters tumble up into place, one after another. */
+export function Letters({ text, className, delay: d = 0 }: { text: string; className?: string; delay?: number }) {
+  const [ref, shown] = useShown<HTMLSpanElement>('0px 0px -12% 0px');
+  let n = 0;
 
   return (
-    <motion.span
-      className={className}
-      initial="hidden"
-      whileInView="shown"
-      viewport={{ once: true, margin: '-10% 0px -10% 0px' }}
-      transition={{ staggerChildren: stagger, delayChildren: delay }}
-      aria-label={text}
-    >
-      {words.map((word, i) => (
-        <span key={`${word}-${i}`} className="inline-block overflow-hidden align-bottom">
-          <motion.span
-            className="inline-block"
-            aria-hidden="true"
-            variants={{ hidden: { y: '105%' }, shown: { y: 0 } }}
-            transition={{ duration: 0.9, ease: EASE }}
-          >
-            {word}
-            {i < words.length - 1 ? ' ' : ''}
-          </motion.span>
-        </span>
+    <span ref={ref} className={`inline-block ${className ?? ''}`} data-shown={shown}>
+      <span className="sr-only">{text}</span>
+      {/* Grouped by word, so a long name wraps between words, never inside one. */}
+      {text.split(' ').map((word, w) => (
+        <Fragment key={w}>
+          {w > 0 && ' '}
+          <span aria-hidden="true" className="inline-block whitespace-nowrap">
+            {word.split('').map((c, i) => (
+              <span key={i} className="rv-word rv-letter">
+                <span className="rv-in" style={delay(d + n++ * 0.035)}>
+                  {c}
+                </span>
+              </span>
+            ))}
+          </span>
+        </Fragment>
       ))}
-    </motion.span>
+    </span>
   );
 }
 
 /** Plain fade and lift, for anything that is not type. */
 export function Rise({
   children,
-  delay = 0,
-  y = 26,
+  delay: d = 0,
   className,
+  as = 'div',
 }: {
   children: ReactNode;
   delay?: number;
-  y?: number;
   className?: string;
+  as?: 'div' | 'li';
 }) {
-  const reduced = useReducedMotion();
-
-  return (
-    <motion.div
-      className={className}
-      initial={reduced ? { opacity: 0 } : { opacity: 0, y }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-8% 0px -8% 0px' }}
-      transition={{ duration: 0.95, delay, ease: EASE }}
-    >
-      {children}
-    </motion.div>
-  );
-}
-
-/**
- * A word whose letters tumble up into place, one after another, when it
- * scrolls into view.
- */
-export function Letters({ text, className, delay = 0 }: { text: string; className?: string; delay?: number }) {
-  const reduced = useReducedMotion();
-  if (reduced) return <span className={className}>{text}</span>;
-
-  return (
-    <motion.span
-      className={`inline-block ${className ?? ''}`}
-      initial="hidden"
-      whileInView="shown"
-      viewport={{ once: true, margin: '-12% 0px -12% 0px' }}
-      transition={{ staggerChildren: 0.035, delayChildren: delay }}
-    >
-      <span className="sr-only">{text}</span>
-      {/* Letters are grouped by word, so a long name still wraps between words
-          and never in the middle of one. */}
-      {text.split(' ').map((word, w) => (
-        <Fragment key={w}>
-          {w > 0 && ' '}
-          <span aria-hidden="true" className="inline-block whitespace-nowrap">
-            {word.split('').map((c, i) => (
-              <span key={i} className="-mb-[0.16em] inline-block overflow-hidden pb-[0.16em] align-bottom">
-                <motion.span
-                  className="inline-block origin-bottom-left"
-                  variants={{
-                    hidden: { y: '110%', rotate: 12 },
-                    shown: { y: 0, rotate: 0 },
-                  }}
-                  transition={{ duration: 0.85, ease: EASE }}
-                >
-                  {c}
-                </motion.span>
-              </span>
-            ))}
-          </span>
-        </Fragment>
-      ))}
-    </motion.span>
-  );
+  const [ref, shown] = useShown<HTMLElement>('0px 0px -8% 0px');
+  return createElement(as, { ref, className: `rv-rise ${className ?? ''}`, 'data-shown': shown, style: delay(d) }, children);
 }

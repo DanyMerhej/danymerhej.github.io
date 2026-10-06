@@ -55,13 +55,16 @@ export function Browser({
   );
 }
 
-/** A screenshot that sits inside a frame and loads only when needed. */
-export function Shot({ src, alt, className }: { src: string; alt: string; className?: string }) {
+/**
+ * A screenshot that sits inside a frame. Lazy by default; `eager` switches it
+ * to load and decode ahead of time, for frames about to slide into view.
+ */
+export function Shot({ src, alt, className, eager = false }: { src: string; alt: string; className?: string; eager?: boolean }) {
   return (
     <img
       src={src}
       alt={alt}
-      loading="lazy"
+      loading={eager ? 'eager' : 'lazy'}
       decoding="async"
       draggable={false}
       className={`block h-full w-full object-cover object-top ${className ?? ''}`}

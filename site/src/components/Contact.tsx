@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { profile, worlds } from '../data/site';
 import { useFinePointer, useWorld } from '../lib/hooks';
 import { scrollToY } from '../lib/smooth';
+import { WhatsAppIcon } from './Icons';
 import { Mask } from './Motion';
 
 const CONFETTI = ['#C6F94E', '#F0A6E0', '#FFB86B', '#8FB8FF', '#FFD166', '#FFFFFF'];
@@ -46,27 +47,50 @@ export function Contact() {
           the whole thing needs building rather than just a screen.
         </p>
 
-        <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        {/* WhatsApp first: it is where I answer fastest. Email sits right beside it. */}
+        <div className="mt-10 grid max-w-2xl gap-3">
           <Magnetic>
-            <a href={`mailto:${profile.email}`} className="btn-solid group h-16 w-full min-w-0 gap-2 px-5 text-[0.95rem] sm:w-auto sm:gap-2.5 sm:px-7 sm:text-[1.05rem]" data-cursor="Write">
-              <Mail className="h-5 w-5 shrink-0" />
-              <span className="min-w-0 truncate">{profile.email}</span>
+            <a
+              href={profile.whatsapp}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="btn-whatsapp group h-16 w-full text-[1.05rem] shadow-[0_18px_40px_-18px_rgba(6,40,20,0.6)]"
+              data-cursor="Chat"
+            >
+              <WhatsAppIcon className="h-6 w-6 shrink-0" />
+              Message me on WhatsApp
               <ArrowUpRight className="h-5 w-5 shrink-0 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
             </a>
           </Magnetic>
-          <div className="relative">
-            <button type="button" onClick={copy} className="btn-ghost h-16 w-full border-fg/30 px-7 sm:w-auto">
-              {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
-              {copied ? 'Copied. Talk soon!' : 'Copy the address'}
-            </button>
-            <Confetti key={burst} play={burst > 0} />
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
+            <a
+              href={`mailto:${profile.email}`}
+              className="btn-solid h-14 min-w-0 gap-2 px-4 text-[0.95rem] sm:px-6"
+              data-cursor="Write"
+            >
+              <Mail className="h-5 w-5 shrink-0" />
+              <span className="min-w-0 truncate">{profile.email}</span>
+            </a>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={copy}
+                className="btn-ghost h-14 w-14 border-fg/30 px-0 sm:w-auto sm:px-5"
+                aria-label={copied ? 'Copied' : 'Copy the email address'}
+              >
+                {copied ? <Check className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+                <span className="hidden sm:inline">{copied ? 'Copied' : 'Copy'}</span>
+              </button>
+              <Confetti key={burst} play={burst > 0} />
+            </div>
           </div>
         </div>
 
-        <ul className="mt-16 grid border-t-2 border-fg/15 sm:grid-cols-3">
+        <ul className="mt-16 grid border-t-2 border-fg/15 sm:grid-cols-2 lg:grid-cols-4">
+          <Channel icon={<WhatsAppIcon className="h-5 w-5" />} label="WhatsApp" value={profile.phone} href={profile.whatsapp} />
           <Channel icon={<Linkedin className="h-5 w-5" />} label="LinkedIn" value="danny-merhej" href={profile.linkedin} />
           <Channel icon={<Instagram className="h-5 w-5" />} label="Instagram" value={profile.instagramHandle} href={profile.instagram} />
-          <Channel icon={<Phone className="h-5 w-5" />} label="Phone" value={profile.phone} href={`tel:${profile.phoneHref}`} />
+          <Channel icon={<Phone className="h-5 w-5" />} label="Call" value={profile.phone} href={`tel:${profile.phoneHref}`} />
         </ul>
       </div>
 
@@ -98,12 +122,12 @@ export function Contact() {
 function Channel({ icon, label, value, href }: { icon: React.ReactNode; label: string; value: string; href: string }) {
   const external = href.startsWith('http');
   return (
-    <li className="border-b-2 border-fg/15 sm:border-b-0 sm:border-r-2 sm:last:border-r-0">
+    <li className="border-b-2 border-fg/15">
       <a
         href={href}
         target={external ? '_blank' : undefined}
         rel={external ? 'noreferrer noopener' : undefined}
-        className="group flex items-center justify-between gap-4 py-6 sm:px-5 sm:first:pl-0"
+        className="group flex items-center justify-between gap-4 py-6 sm:pr-6"
       >
         <span className="min-w-0">
           <span className="flex items-center gap-2 text-[14px] font-semibold opacity-75">

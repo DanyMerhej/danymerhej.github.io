@@ -1,6 +1,5 @@
-import { motion, useReducedMotion, useScroll, useTransform } from 'framer-motion';
-import type { MotionValue } from 'framer-motion';
 import { useRef } from 'react';
+import type { CSSProperties } from 'react';
 import { profile, worlds } from '../data/site';
 import { useWorld } from '../lib/hooks';
 import { Rise } from './Motion';
@@ -57,83 +56,72 @@ export function About() {
   );
 }
 
+/**
+ * Each word fades up over its own slice of the paragraph's passage through
+ * the screen. The slices are CSS animation ranges on a scroll timeline
+ * (index.css, .sd-word), so it is all done off the main thread; without
+ * scroll timelines the words are simply there.
+ */
 function ScrubQuote({ text }: { text: string }) {
-  const ref = useRef<HTMLParagraphElement>(null);
-  const reduced = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start 0.85', 'end 0.45'] });
   const words = text.split(' ');
+  // The paragraph lights between 10% and 62% of its cover range: from just
+  // after it enters to a little above the middle of the screen.
+  const from = 10;
+  const to = 62;
+  const step = (to - from) / words.length;
 
   return (
-    <p ref={ref} className="serif-i mt-8 max-w-5xl text-[clamp(2rem,8.4vw,4.4rem)] leading-[1.08]">
+    <p
+      className="serif-i mt-8 max-w-5xl text-[clamp(2rem,8.4vw,4.4rem)] leading-[1.08]"
+      style={{ viewTimelineName: '--quote' } as CSSProperties}
+    >
       <span className="sr-only">{text}</span>
-      {words.map((w, i) =>
-        reduced ? (
-          <span key={i} aria-hidden="true">
-            {w}{' '}
-          </span>
-        ) : (
-          <Word key={i} progress={scrollYProgress} range={[i / words.length, (i + 1) / words.length]}>
+      {words.map((w, i) => (
+        <span key={i} aria-hidden="true">
+          <span
+            className="sd-word inline-block"
+            style={{ '--a': `${(from + i * step).toFixed(2)}%`, '--b': `${(from + (i + 1) * step).toFixed(2)}%` } as CSSProperties}
+          >
             {w}
-          </Word>
-        ),
-      )}
+          </span>{' '}
+        </span>
+      ))}
     </p>
   );
 }
 
-function Word({ children, progress, range }: { children: string; progress: MotionValue<number>; range: [number, number] }) {
-  const opacity = useTransform(progress, range, [0.14, 1]);
-  const y = useTransform(progress, range, [8, 0]);
-  return (
-    <>
-      <motion.span aria-hidden="true" className="inline-block" style={{ opacity, y }}>
-        {children}
-      </motion.span>{' '}
-    </>
-  );
-}
-
-/** The portrait as a duotone on a blob of the accent colour, with a badge turning round it. */
+/** The portrait on a blob of the accent colour, with a badge turning round it. */
 function Portrait() {
-  const reduced = useReducedMotion();
   const badge = `${profile.name} · builds things · ${profile.location} · `;
 
   return (
     <div className="relative mx-auto w-[min(78vw,340px)] md:mx-0">
-      <motion.div
-        className="aspect-square overflow-hidden bg-accent"
-        animate={reduced ? undefined : { borderRadius: ['42% 58% 52% 48%', '55% 45% 40% 60%', '42% 58% 52% 48%'] }}
-        style={{ borderRadius: '42% 58% 52% 48%' }}
-        transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-      >
-        <img
-          src={profile.portrait}
-          alt={profile.name}
-          width={512}
-          height={512}
-          loading="lazy"
-          decoding="async"
-          className="h-full w-full object-cover mix-blend-multiply contrast-[1.15] grayscale"
-        />
-      </motion.div>
+      <div className="wobble absolute inset-[-4%] rounded-[46%] bg-accent" aria-hidden="true" />
+      <img
+        src={profile.portrait}
+        alt={profile.name}
+        width={640}
+        height={640}
+        loading="lazy"
+        decoding="async"
+        className="relative aspect-square w-full rounded-[42%] object-cover"
+      />
 
-      <motion.svg
+      <svg
         viewBox="0 0 200 200"
-        className="absolute -bottom-8 -right-6 h-32 w-32 rounded-full bg-fg text-bg"
-        animate={reduced ? undefined : { rotate: 360 }}
-        transition={{ duration: 16, repeat: Infinity, ease: 'linear' }}
+        className="spin-badge absolute -bottom-8 -right-6 h-32 w-32 rounded-full bg-fg text-bg"
         aria-hidden="true"
       >
         <defs>
           <path id="badge-circle" d="M100,100 m-72,0 a72,72 0 1,1 144,0 a72,72 0 1,1 -144,0" />
         </defs>
-        <text fontSize="17.5" fontWeight="600" letterSpacing="1.5" fill="currentColor" fontFamily="DM Sans, sans-serif">
+        <text fontSize="16" fontWeight="600" letterSpacing="1.5" fill="currentColor" fontFamily="DM Sans, sans-serif">
           <textPath href="#badge-circle">{badge.toUpperCase()}</textPath>
         </text>
         <text x="100" y="114" textAnchor="middle" fontSize="40" fill="currentColor">
           ✦
         </text>
-      </motion.svg>
+      </svg>
     </div>
   );
 }

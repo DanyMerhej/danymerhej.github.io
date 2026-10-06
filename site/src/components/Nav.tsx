@@ -1,9 +1,11 @@
-import { motion, useMotionValueEvent, useScroll, useSpring } from 'framer-motion';
 import { Briefcase, House, LayoutGrid, Send, Sparkles, Store } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { chapters, profile } from '../data/site';
 import { useActiveSection } from '../lib/hooks';
+import { onScrollFrame } from '../lib/scroll';
 import { scrollToId, scrollToY } from '../lib/smooth';
+import { WhatsAppIcon } from './Icons';
 
 const IDS = chapters.map((c) => c.id);
 
@@ -17,19 +19,33 @@ const DOCK = [
 
 /** The top bar: who this is, where you are. Slides away while you read down, back when you scroll up. */
 export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
-  const { scrollY, scrollYProgress } = useScroll();
-  const progress = useSpring(scrollYProgress, { stiffness: 140, damping: 30, restDelta: 0.001 });
   const [hidden, setHidden] = useState(false);
   const [solid, setSolid] = useState(false);
   const active = useActiveSection(IDS);
   const label = chapters.find((c) => c.id === active)?.label ?? '';
 
-  useMotionValueEvent(scrollY, 'change', (y) => {
-    const prev = scrollY.getPrevious() ?? 0;
-    setSolid(y > 40);
-    if (y > 300 && y > prev + 2) setHidden(true);
-    else if (y < prev - 2 || y <= 300) setHidden(false);
-  });
+  // Fed by the page's single scroll reader (lib/scroll.ts), and setting state
+  // only when the answer changes, so scrolling never re-renders the bar frame
+  // by frame.
+  useEffect(() => {
+    // The bottom of the page, cached, so the scroll handler reads nothing.
+    let max = Infinity;
+    const measure = () => (max = document.documentElement.scrollHeight - window.innerHeight);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(document.body);
+    const stop = onScrollFrame((y, prev) => {
+      setSolid(y > 40);
+      // iOS bounces past either end; that is not the reader changing direction.
+      if (y < 0 || y > max) return;
+      if (y > 300 && y > prev + 2) setHidden(true);
+      else if (y < prev - 2 || y <= 300) setHidden(false);
+    });
+    return () => {
+      stop();
+      ro.disconnect();
+    };
+  }, []);
 
   return (
     <>
@@ -40,21 +56,20 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
         Skip to the work
       </a>
 
-      <motion.div
+      {/* Reading progress, driven by the scroll itself (index.css, .sd-progress). */}
+      <div
         aria-hidden="true"
-        className="fixed inset-x-0 top-0 z-[130] h-[3px] origin-left bg-accent"
-        style={{ scaleX: progress }}
+        className="sd-progress fixed inset-x-0 top-0 z-[130] h-[3px] origin-left bg-accent"
+        style={{ transform: 'scaleX(0)' }}
       />
 
-      <motion.header
-        className="fixed inset-x-0 top-0 z-[120]"
-        animate={{ y: hidden ? '-110%' : '0%' }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+      <header
+        className={`fixed inset-x-0 top-0 z-[120] transition-transform duration-500 ease-out ${
+          hidden ? '-translate-y-[110%]' : 'translate-y-0'
+        }`}
       >
         <div
-          className={`gutter flex h-16 items-center justify-between gap-3 transition-[background-color,backdrop-filter] duration-500 ${
-            solid ? 'bg-bg/70 backdrop-blur-xl' : ''
-          }`}
+          className={`gutter flex h-16 items-center justify-between gap-3 ${solid ? 'glass' : ''}`}
           style={{ maxWidth: 'none' }}
         >
           <button
@@ -78,9 +93,16 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
           </p>
 
           <div className="flex shrink-0 items-center gap-2">
-            <button type="button" onClick={() => scrollToId('contact')} className="btn-accent hidden min-h-[2.6rem] px-4 text-[14px] sm:inline-flex">
-              Say hello
-            </button>
+            <a
+              href={profile.whatsapp}
+              target="_blank"
+              rel="noreferrer noopener"
+              className="btn-whatsapp min-h-[2.6rem] gap-2 px-3.5 text-[14px]"
+              aria-label="Message me on WhatsApp"
+            >
+              <WhatsAppIcon className="h-[18px] w-[18px]" />
+              <span className="hidden sm:inline">WhatsApp</span>
+            </a>
             <button
               type="button"
               onClick={onOpenMenu}
@@ -92,28 +114,45 @@ export function Header({ onOpenMenu }: { onOpenMenu: () => void }) {
             </button>
           </div>
         </div>
-      </motion.header>
+      </header>
     </>
   );
 }
 
-/** A floating dock in reach of a thumb. The current section's button opens out to say its name. */
+/**
+ * A floating dock in reach of a thumb. Its width never changes: equal icon
+ * buttons, a highlight that slides between them with a CSS transform, and the
+ * current section's name in a caption above, so nothing re-lays out as you
+ * scroll from one section to the next.
+ */
 export function Dock({ onOpenMenu }: { onOpenMenu: () => void }) {
   const active = useActiveSection(IDS);
+  const at = DOCK.findIndex((d) => d.id === active);
+  const caption = chapters.find((c) => c.id === active)?.label ?? '';
 
   return (
     <nav
       aria-label="Sections"
-      className="fixed inset-x-0 bottom-[max(14px,env(safe-area-inset-bottom))] z-[120] flex justify-center px-3"
+      className="enter-rise pointer-events-none fixed inset-x-0 bottom-[max(14px,env(safe-area-inset-bottom))] z-[120] flex flex-col items-center px-3"
+      style={{ '--d': '0.6s' } as CSSProperties}
     >
-      <motion.ul
-        className="flex items-center gap-1 rounded-full border border-fg/10 bg-bg/75 p-1.5 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.55)] backdrop-blur-xl"
-        initial={{ y: 90, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: 0.6, type: 'spring', stiffness: 160, damping: 20 }}
+      <p
+        key={caption}
+        aria-hidden="true"
+        className="enter-rise glass mb-2 rounded-full px-3 py-1 text-[12px] font-semibold"
+        style={{ '--d': '0s' } as CSSProperties}
       >
-        {DOCK.map((d) => {
-          const on = active === d.id;
+        {caption}
+      </p>
+      <ul className="glass pointer-events-auto relative flex items-center rounded-full border border-fg/10 p-1.5 shadow-[0_18px_50px_-18px_rgba(0,0,0,0.55)]">
+        {/* The highlight: one element, moved, never re-laid out. */}
+        <span
+          aria-hidden="true"
+          className="absolute left-1.5 top-1.5 h-11 w-12 rounded-full bg-fg transition-[transform,opacity] duration-500 ease-out"
+          style={{ transform: `translateX(${Math.max(at, 0) * 48}px)`, opacity: at < 0 ? 0 : 1 }}
+        />
+        {DOCK.map((d, i) => {
+          const on = i === at;
           const Icon = d.icon;
           return (
             <li key={d.id}>
@@ -122,41 +161,26 @@ export function Dock({ onOpenMenu }: { onOpenMenu: () => void }) {
                 onClick={() => (d.id === 'top' ? scrollToY(0) : scrollToId(d.id))}
                 aria-label={d.label}
                 aria-current={on ? 'true' : undefined}
-                className="relative flex h-11 items-center justify-center rounded-full px-3"
+                className={`relative flex h-11 w-12 items-center justify-center rounded-full transition-colors duration-300 ${
+                  on ? 'text-bg' : 'text-fg/80'
+                }`}
               >
-                {on && (
-                  <motion.span
-                    layoutId="dock-pill"
-                    className="absolute inset-0 rounded-full bg-fg"
-                    transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                  />
-                )}
-                <span className={`relative flex items-center gap-1.5 ${on ? 'text-bg' : 'text-fg/80'}`}>
-                  <Icon className="h-[18px] w-[18px]" />
-                  <motion.span
-                    initial={false}
-                    animate={{ width: on ? 'auto' : 0, opacity: on ? 1 : 0 }}
-                    transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-                    className="overflow-hidden whitespace-nowrap text-[13px] font-semibold"
-                  >
-                    {d.label}
-                  </motion.span>
-                </span>
+                <Icon className="h-[19px] w-[19px]" />
               </button>
             </li>
           );
         })}
-        <li className="ml-0.5 border-l border-fg/15 pl-1">
+        <li className="ml-1 border-l border-fg/15 pl-1">
           <button
             type="button"
             onClick={onOpenMenu}
             aria-label="Open the index"
             className="flex h-11 w-11 items-center justify-center rounded-full text-fg/80"
           >
-            <LayoutGrid className="h-[18px] w-[18px]" />
+            <LayoutGrid className="h-[19px] w-[19px]" />
           </button>
         </li>
-      </motion.ul>
+      </ul>
     </nav>
   );
 }

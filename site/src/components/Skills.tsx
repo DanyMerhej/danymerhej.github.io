@@ -3,7 +3,7 @@ import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { capabilities, toolkit, worlds } from '../data/site';
 import { useWorld } from '../lib/hooks';
-import { Mask, Words } from './Motion';
+import { Mask, Rise, Words } from './Motion';
 
 const CARD = ['#FFFFFF', '#C6F94E', '#F0A6E0', '#FFB86B', '#8FB8FF', '#FFD166', '#C6A8FF'];
 
@@ -52,20 +52,19 @@ export function Skills() {
         </div>
       </div>
 
+      {/* A row that only scrolls sideways: overflow-y is pinned to hidden, the
+          cards carry no offset that could poke out of it, and the padding gives
+          the hover lift room. */}
+      <Rise>
       <ul
         ref={rail}
-        className="no-bar mt-6 flex snap-x snap-mandatory gap-4 overflow-x-auto scroll-smooth px-5 pb-6 sm:px-8 lg:px-12"
+        className="no-bar mt-6 flex snap-x snap-mandatory items-stretch gap-4 overflow-x-auto overflow-y-hidden overscroll-x-contain scroll-smooth px-5 py-3 sm:px-8 lg:px-12"
       >
         {capabilities.map((c, i) => (
-          <motion.li
+          <li
             key={c.title}
-            className="flex w-[82vw] max-w-[380px] shrink-0 snap-center flex-col rounded-[2rem] p-6 text-[#13101C] sm:snap-start"
+            className="flex w-[82vw] max-w-[380px] shrink-0 snap-center flex-col rounded-[2rem] p-6 text-[#13101C] transition-transform duration-300 ease-out sm:snap-start [@media(hover:hover)]:hover:-translate-y-1.5"
             style={{ background: CARD[i % CARD.length] }}
-            initial={{ opacity: 0, y: 40, rotate: i % 2 ? 3 : -3 }}
-            whileInView={{ opacity: 1, y: 0, rotate: 0 }}
-            viewport={{ once: true, margin: '0px -5% 0px -5%' }}
-            transition={{ type: 'spring', stiffness: 120, damping: 16, delay: Math.min(i, 3) * 0.06 }}
-            whileHover={{ y: -6, rotate: i % 2 ? 1 : -1 }}
           >
             <div className="flex items-start justify-between">
               <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#13101C] text-[26px] text-white">
@@ -85,9 +84,10 @@ export function Skills() {
                 </li>
               ))}
             </ul>
-          </motion.li>
+          </li>
         ))}
       </ul>
+      </Rise>
 
       {/* The toolkit, one group at a time */}
       <div className="gutter mt-20 md:mt-28">

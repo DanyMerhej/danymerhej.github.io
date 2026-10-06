@@ -1,5 +1,6 @@
 import { useReducedMotion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { onScrollFrame } from '../lib/scroll';
 import { hexToRgb } from '../lib/world';
 
 const VERT = `
@@ -112,13 +113,26 @@ export function Liquid({
   colours,
   background,
   className,
+  paused = false,
 }: {
   colours: [string, string, string, string];
   background: string;
   className?: string;
+  /** Draw one frame and hold, e.g. while something opaque covers the canvas. */
+  paused?: boolean;
 }) {
   const holder = useRef<HTMLDivElement>(null);
   const reduced = useReducedMotion();
+  const pausedRef = useRef(paused);
+  const resume = useRef<() => void>(() => {});
+  // A lost GL context (phones drop them under memory pressure) is rebuilt by
+  // running the effect again.
+  const [generation, setGeneration] = useState(0);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+    if (!paused) resume.current();
+  }, [paused]);
 
   useEffect(() => {
     const host = holder.current;
@@ -167,11 +181,22 @@ export function Liquid({
     gl.uniform3fv(u('u_c3'), rgb(colours[3]));
 
     const coarse = window.matchMedia('(pointer: coarse)').matches;
-    const scale = coarse ? 0.4 : 0.55;
+    const scale = coarse ? 0.33 : 0.5;
+    // The canvas's place on the page, kept up to date on resize, so neither a
+    // frame nor a touch ever has to ask the browser for layout.
+    const box = { top: 0, left: 0, width: 1, height: 1 };
+    // The page's scroll position, from the shared once-a-frame reader.
+    let pageY = 0;
+    const unsubscribe = onScrollFrame((y) => (pageY = y));
 
     const resize = () => {
-      const w = Math.max(1, Math.round(el.clientWidth * scale));
-      const h = Math.max(1, Math.round(el.clientHeight * scale));
+      const r = el.getBoundingClientRect();
+      box.top = r.top + window.scrollY;
+      box.left = r.left;
+      box.width = Math.max(r.width, 1);
+      box.height = Math.max(r.height, 1);
+      const w = Math.max(1, Math.round(box.width * scale));
+      const h = Math.max(1, Math.round(box.height * scale));
       if (el.width !== w || el.height !== h) {
         el.width = w;
         el.height = h;
@@ -179,7 +204,7 @@ export function Liquid({
       }
       gl.uniform2f(uRes, w, h);
       // Resizing a canvas clears it; with no animation running, paint it again.
-      if (reduced) redraw();
+      if (reduced || pausedRef.current) redraw();
     };
     let redraw = () => {};
     resize();
@@ -191,9 +216,8 @@ export function Liquid({
     const mouse = { x: 0.7, y: 0.65 };
     let stir = 0.35;
     const move = (cx: number, cy: number) => {
-      const r = el.getBoundingClientRect();
-      const nx = (cx - r.left) / r.width;
-      const ny = 1 - (cy - r.top) / r.height;
+      const nx = (cx - box.left) / box.width;
+      const ny = 1 - (cy + pageY - box.top) / box.height;
       if (nx < -0.2 || nx > 1.2 || ny < -0.2 || ny > 1.2) return;
       target.x = nx;
       target.y = ny;
@@ -210,7 +234,7 @@ export function Liquid({
     let visible = true;
     const io = new IntersectionObserver(([e]) => {
       visible = e.isIntersecting;
-      if (visible && !reduced) start();
+      if (visible && !reduced && !pausedRef.current) start();
     });
     io.observe(el);
 
@@ -218,12 +242,17 @@ export function Liquid({
     let running = false;
     const t0 = performance.now() - 40000 * Math.random();
 
+    let prevDraw = performance.now();
     const draw = (now: number) => {
-      mouse.x += (target.x - mouse.x) * 0.06;
-      mouse.y += (target.y - mouse.y) * 0.06;
-      stir += (0.3 - stir) * 0.02;
-      const rect = el.getBoundingClientRect();
-      const scrolled = Math.max(0, -rect.top / Math.max(rect.height, 1));
+      // Easing scaled by elapsed time, so the swirl settles at the same speed
+      // at 30, 60 or 120 frames a second.
+      const steps = Math.min((now - prevDraw) / (1000 / 60), 4);
+      prevDraw = now;
+      const k = 1 - Math.pow(1 - 0.06, steps);
+      mouse.x += (target.x - mouse.x) * k;
+      mouse.y += (target.y - mouse.y) * k;
+      stir += (0.3 - stir) * (1 - Math.pow(1 - 0.02, steps));
+      const scrolled = Math.max(0, (pageY - box.top) / box.height);
       gl.uniform1f(uTime, (now - t0) / 1000);
       gl.uniform2f(uMouse, mouse.x, mouse.y);
       gl.uniform1f(uStir, stir);
@@ -231,12 +260,19 @@ export function Liquid({
       gl.drawArrays(gl.TRIANGLES, 0, 3);
     };
 
+    // A phone draws at 30 frames a second: the colour drifts slowly enough
+    // that nobody sees the difference, and the GPU gets half its time back.
+    const interval = coarse ? 1000 / 30 - 2 : 0;
+    let last = 0;
     const loop = (now: number) => {
-      if (!visible || document.hidden) {
+      if (!visible || document.hidden || pausedRef.current) {
         running = false;
         return;
       }
-      draw(now);
+      if (now - last >= interval) {
+        last = now;
+        draw(now);
+      }
       frame = requestAnimationFrame(loop);
     };
 
@@ -249,21 +285,38 @@ export function Liquid({
     const onVis = () => !document.hidden && visible && !reduced && start();
     document.addEventListener('visibilitychange', onVis);
 
+    const onLost = (e: Event) => {
+      e.preventDefault();
+      cancelAnimationFrame(frame);
+      running = false;
+      // The still gradient underneath shows until the context comes back.
+      el.style.visibility = 'hidden';
+    };
+    const onRestored = () => setGeneration((g) => g + 1);
+    el.addEventListener('webglcontextlost', onLost);
+    el.addEventListener('webglcontextrestored', onRestored);
+
     redraw = () => draw(performance.now());
-    if (reduced) redraw();
-    else start();
+    resume.current = () => !reduced && visible && start();
+    // Always paint one frame, so the colour is there the moment it is uncovered.
+    redraw();
+    if (!reduced && !pausedRef.current) start();
 
     return () => {
       cancelAnimationFrame(frame);
+      unsubscribe();
       ro.disconnect();
       io.disconnect();
       window.removeEventListener('pointermove', onPointer);
       window.removeEventListener('touchmove', onTouch);
       document.removeEventListener('visibilitychange', onVis);
+      el.removeEventListener('webglcontextlost', onLost);
+      el.removeEventListener('webglcontextrestored', onRestored);
+      resume.current = () => {};
       gl.getExtension('WEBGL_lose_context')?.loseContext();
       el.remove();
     };
-  }, [colours, background, reduced]);
+  }, [colours, background, reduced, generation]);
 
   return (
     <div className={className} aria-hidden="true">

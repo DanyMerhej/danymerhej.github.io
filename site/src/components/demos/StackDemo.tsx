@@ -22,7 +22,7 @@ function money(n: number): string {
 }
 
 /** StackUp in miniature: tap to earn, buy the next business, IPO when you reach the moon. */
-export function StackDemo() {
+export function StackDemo({ active = true }: { active?: boolean }) {
   const [cash, setCash] = useState(0);
   const [owned, setOwned] = useState(1);
   const [prestige, setPrestige] = useState(1);
@@ -34,18 +34,22 @@ export function StackDemo() {
   const perSec = BUSINESSES.slice(0, owned).reduce((s, b) => s + b.rate, 0) * 0.5 * prestige;
   const perTap = top.rate * prestige;
 
-  // Idle income, only while the toy is actually on screen.
+  // Idle income, four times a second, and only while the toy is on screen
+  // and facing the visitor: the interval itself stops otherwise.
   useEffect(() => {
-    let on = true;
     const el = box.current;
-    const io = new IntersectionObserver(([e]) => (on = e.isIntersecting));
-    if (el) io.observe(el);
-    const id = setInterval(() => on && setCash((c) => c + perSec / 10), 100);
+    if (!el || !active) return;
+    let id = 0;
+    const io = new IntersectionObserver(([e]) => {
+      window.clearInterval(id);
+      if (e.isIntersecting) id = window.setInterval(() => setCash((c) => c + perSec / 4), 250);
+    });
+    io.observe(el);
     return () => {
-      clearInterval(id);
+      window.clearInterval(id);
       io.disconnect();
     };
-  }, [perSec]);
+  }, [perSec, active]);
 
   const tap = (e: React.PointerEvent) => {
     setCash((c) => c + perTap);
@@ -125,26 +129,22 @@ export function StackDemo() {
           disabled={cash < next.cost}
           className="relative h-12 overflow-hidden rounded-full bg-[#2A1500] text-[12px] font-semibold text-white transition-transform active:scale-95"
         >
-          <motion.span
-            className="absolute inset-y-0 left-0 bg-[#D9480F]"
-            animate={{ width: `${progress * 100}%` }}
-            transition={{ duration: 0.2 }}
+          <span
+            className="absolute inset-0 origin-left bg-[#D9480F] transition-transform duration-200 ease-linear"
+            style={{ transform: `scaleX(${progress})` }}
           />
           <span className="relative">
             {cash >= next.cost ? `Buy a ${next.name}!` : `${next.name} at ${money(next.cost)}`}
           </span>
         </button>
       ) : (
-        <motion.button
+        <button
           type="button"
           onClick={ipo}
-          initial={{ scale: 0.9 }}
-          animate={{ scale: [1, 1.04, 1] }}
-          transition={{ duration: 1.2, repeat: Infinity }}
-          className="h-12 rounded-full bg-[#D9480F] text-[12px] font-bold text-white"
+          className="pulse-soft h-12 rounded-full bg-[#D9480F] text-[12px] font-bold text-white"
         >
           You own the moon. Go public (IPO ×2)
-        </motion.button>
+        </button>
       )}
       <p className="mt-2 text-center text-[10px] text-black/45">
         {owned}/{BUSINESSES.length} businesses · tap fast, it adds up
