@@ -1,5 +1,6 @@
 import type { DemoId } from '../../data/site';
 import { EventDemo } from './EventDemo';
+import { HomeDemo } from './HomeDemo';
 import { RentDemo } from './RentDemo';
 import { SalonDemo } from './SalonDemo';
 import { SplitDemo } from './SplitDemo';
@@ -16,6 +17,8 @@ export function Demo({ id, active = true }: { id: DemoId; active?: boolean }) {
       return <SalonDemo />;
     case 'rent':
       return <RentDemo />;
+    case 'home':
+      return <HomeDemo />;
     case 'stack':
       return <StackDemo active={active} />;
   }

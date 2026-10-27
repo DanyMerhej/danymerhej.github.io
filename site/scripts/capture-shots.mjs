@@ -29,11 +29,23 @@ const SITES = {
   // The home page is the client booking app; the product is what a salon owner signs up for.
   salonyy: 'https://salonyy.site/business',
   rentyy: 'https://rentyy.net',
+  beityy: 'https://beityy.com',
   alpha: 'https://alphasupplementstore.com',
   hotw: 'https://homeofthewatches.com',
   elastick: 'https://elastickstore.myshopify.com',
   flow: 'https://zqbmay-5c.myshopify.com',
   bits: 'https://bitsevents.net',
+};
+
+// Sites whose page needs a step before the shot. Beityy opens on its sign-in
+// screen, so the shot is of the demo house behind it, in the app's own night,
+// with the install card it shows a phone already put away.
+const SETUP = {
+  beityy: {
+    colorScheme: 'dark',
+    storage: { 'beityy:install-dismissed': '1' },
+    click: 'Explore the demo house',
+  },
 };
 
 const MOBILE = { width: 390, height: 844, scale: 2, ua: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1' };
@@ -106,6 +118,7 @@ for (const id of ids) {
       isMobile: kind === 'mobile',
       hasTouch: kind === 'mobile',
       userAgent: vp.ua,
+      colorScheme: SETUP[id]?.colorScheme,
       // An HTTPS proxy that inspects traffic re-signs every certificate.
       ignoreHTTPSErrors: Boolean(proxy),
     });
@@ -119,6 +132,8 @@ for (const id of ids) {
       }
       return route.abort();
     });
+    const storage = SETUP[id]?.storage;
+    if (storage) await ctx.addInitScript((s) => Object.entries(s).forEach(([k, v]) => localStorage.setItem(k, v)), storage);
     const page = await ctx.newPage();
     try {
       // A request that ran out of retries leaves a broken image, so load the page
@@ -128,6 +143,10 @@ for (const id of ids) {
         const res = await page.goto(SITES[id], { waitUntil: 'load', timeout: 120000 });
         // A paused store or a dead deploy still renders a page; never let it replace a good shot.
         if (res && !res.ok()) throw new Error(`HTTP ${res.status()}, kept the old shot`);
+        // On a reload the site may already remember the step, so a missing target only warns.
+        if (SETUP[id]?.click) {
+          await page.getByText(SETUP[id].click).click({ timeout: 30000 }).catch(() => console.warn(`  ${id} ${kind}: "${SETUP[id].click}" not found`));
+        }
         broken = await settle(page);
         if (!broken.length) break;
         console.warn(`  ${id} ${kind}: ${broken.length} image(s) not loaded on load ${load}/${LOADS}`);

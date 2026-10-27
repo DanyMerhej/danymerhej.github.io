@@ -11,7 +11,7 @@ export interface World {
 }
 
 /** Which playable toy sits on the back of the product's phone. */
-export type DemoId = 'split' | 'event' | 'salon' | 'rent' | 'stack';
+export type DemoId = 'split' | 'event' | 'salon' | 'rent' | 'home' | 'stack';
 
 export interface ProjectLink {
   label: string;
@@ -84,7 +84,7 @@ export const profile = {
   summary: [
     'Seven years ago I walked into Pixel Software Solutions as an intern. Today I lead the team that builds IRIS, an insurance ERP that more than 30 companies across three continents run their business on: policy administration, underwriting, claims, accounting, collections, reinsurance, reporting, broker portals and the integrations that tie them to the outside world.',
     'That work taught me the unglamorous half of engineering. Regulated domains, million-row tables, migrations that cannot fail, and clients who need a straight answer today. I own the technical conversation with them from the first requirement to the release note.',
-    'The other half is mine. Nights and weekends I build complete products alone: architecture, database, security model, AI pipeline, interface, CI/CD, app store listing. Splittyy, Eventyy, Salonyy and Rentyy are live, and Splittyy is on Google Play too. StackUp is in active development, and two commercial storefronts are trading. I build them because shipping something with your own name on it is the fastest way to stay sharp.',
+    'The other half is mine. Nights and weekends I build complete products alone: architecture, database, security model, AI pipeline, interface, CI/CD, app store listing. Splittyy, Eventyy, Salonyy and Rentyy are live, and Splittyy is on Google Play too. StackUp and Beityy, a smart home platform that already runs my own house, are in active development, and two commercial storefronts are trading. I build them because shipping something with your own name on it is the fastest way to stay sharp.',
     'Not all of it is software. I also do home automation: Sonoff and Zigbee mesh networks, a hub that runs locally, and lighting, climate, access and sensors that keep working when the internet does not. It is the same job as the rest of it. Decide what the system should do when nobody is watching, then make it do that every time.',
   ],
   languages: [
@@ -390,6 +390,58 @@ export const projects: Project[] = [
       { label: 'rentyy.net', href: 'https://rentyy.net', kind: 'site' },
       { label: '@rentyyapp', href: 'https://instagram.com/rentyyapp', kind: 'social' },
     ],
+  },
+  {
+    id: 'beityy',
+    name: 'Beityy',
+    tagline: 'The whole house in one calm app',
+    blurb:
+      'A local-first smart home platform: every device in the house in one app, run by a hub at home that keeps working with the internet down.',
+    status: 'building',
+    year: '2026 to now',
+    role: 'Architect & engineer',
+    logo: '/brand/beityy.webp',
+    kind: 'product',
+    category: 'Smart home · PWA',
+    world: { bg: '#0B1324', fg: '#EEF4FF', accent: '#72E4F7' },
+    shots: { mobile: '/shots/beityy-mobile.webp', desktop: '/shots/beityy-desktop.webp' },
+    demo: 'home',
+    hues: ['#72E4F7', '#A99BFF'],
+    highlights: [
+      'One app for every brand in the house: Zigbee, Sonoff Wi-Fi, Tuya, Midea ACs, IR remotes, cameras, Chromecast and Nest speakers, with no vendor apps',
+      'A hub at home runs the automations, the alarm and the ACs, so the house keeps working with the internet down',
+      'A live 3D model of the house, where every room glows with its real lights and people show where the sensors see them',
+      'Hey Beityy: an assistant you talk or type to in English or Lebanese Arabic, with simple commands understood on the phone itself',
+      'Automations written as sentences, scenes, wake-up alarms and a security system with its own code pad',
+      'Energy against the generator limit, power-cut alerts, and a guard that restarts the Wi-Fi router when it stops passing traffic',
+      'Control from anywhere through Beityy Cloud, with no port forwarding and push alerts when the hub goes quiet',
+    ],
+    engineering:
+      "The rule Beityy is built around is that the cloud is optional. A hub in the house, Docker Compose on Debian, owns the truth: one adapter per brand or protocol speaks a versioned MQTT protocol to a Fastify core, which keeps the registry, the state and an activity log in SQLite and pushes every change to the app over a WebSocket. The adapters are TypeScript where the best library is, Python where it is not, and both sides check every message against one schema, Zod on one and JSON Schema generated from it on the other, so a Python adapter cannot drift from the device model. Every change carries its reason, so the log can say whether a light went off from the app, an automation, the assistant or the wall switch. Away from home the app goes through Supabase, but the hub dials out to it rather than being reached, and nothing local waits on it. The rest is unglamorous reliability for a Lebanese house: devices that drop off the Wi-Fi, a generator with a hard amp limit, an IR blaster that needs a fresh connection for every press, and a router that has to be restarted the way its own web page does it.",
+    stack: [
+      'React 19',
+      'TypeScript (strict)',
+      'Vite',
+      'Tailwind 4',
+      'Radix UI',
+      'Motion',
+      'Three.js',
+      'i18next + RTL',
+      'Zustand',
+      'Fastify',
+      'WebSocket',
+      'MQTT',
+      'SQLite',
+      'Zod',
+      'Python',
+      'Docker Compose',
+      'Supabase',
+      'Google Gemini',
+      'PWA',
+      'Playwright',
+      'Cloudflare Pages',
+    ],
+    links: [{ label: 'beityy.com', href: 'https://beityy.com', kind: 'site' }],
   },
   {
     id: 'stackup',

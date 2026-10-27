@@ -51,6 +51,10 @@ const logos = [
   // orange tile with the mark knocked out of it, so it needs neither knockout nor
   // reversing.
   { file: 'rentyy-icon.png', name: 'rentyy' },
+  // apps/web/public/pwa-512.png from the Beityy repository. The app icon as it is:
+  // the white roof and lit room on a midnight squircle, already transparent
+  // around the tile.
+  { file: 'beityy-icon.png', name: 'beityy' },
   // files/elastick-favicon.png from the E-Lastick store: a navy E under an orange
   // tick, on transparency. The navy would vanish on the dark tile, so it is
   // reversed out like the BITS mark. Its chroma sits near 90 and the orange's

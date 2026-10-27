@@ -25,7 +25,7 @@ The products I own come first and get the most room:
 - **Product worlds**: one full-colour screen per product, with the real app on a phone
   that tilts up as you scroll and turns over into a playable toy of the same idea
   (`src/components/demos`): split a receipt, switch an event to Arabic, drag bookings,
-  mark a hire car, run an idle empire.
+  mark a hire car, light a house, run an idle empire.
 - **Client builds**: the section pins and scrolling walks sideways along the row, the page
   taking each brand's colours as its card reaches the middle.
 - **Day job, skills, beyond code, about, contact**: IRIS's modules in orbit, role cards
@@ -50,7 +50,7 @@ becomes a grid and the sideways section becomes a list.
     /components   Hero, Products (ToyBox, ProductWorld, FlipPhone), Builds, Career, Skills,
                   Beyond, About, Contact, ProjectPage, plus Nav, Menu, Intro, Curtain,
                   Pointer, Liquid (the shader), Kinetic, Marquee, Motion, Frames
-      /demos      the five playable product toys
+      /demos      the six playable product toys
     /data/site.ts ALL the content: copy, projects, experience, links, colour worlds
     /lib          world.ts (colour worlds), router.ts (/work/<id>), smooth.ts, hooks.ts
   /public         favicon, og image, robots, self-hosted fonts, brand marks, screenshots
