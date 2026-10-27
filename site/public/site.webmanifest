@@ -1,0 +1,16 @@
+{
+  "name": "Danny Merhej",
+  "short_name": "Danny Merhej",
+  "description": "Product builder and development team lead: my products, client builds and the day job.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#110E1C",
+  "theme_color": "#110E1C",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

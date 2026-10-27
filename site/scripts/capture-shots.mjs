@@ -39,10 +39,13 @@ const SITES = {
 
 // Sites whose page needs a step before the shot. Beityy opens on its sign-in
 // screen, so the shot is of the demo house behind it, in the app's own night,
-// with the install card it shows a phone already put away.
+// with the install card it shows a phone already put away. An app has a dock
+// pinned to the bottom, so its phone shot is exactly the height the frame shows
+// under its status bar (Frames.tsx), rather than a page that runs on.
 const SETUP = {
   beityy: {
     colorScheme: 'dark',
+    mobileHeight: 801,
     storage: { 'beityy:install-dismissed': '1' },
     click: 'Explore the demo house',
   },
@@ -113,7 +116,7 @@ const ids = args.length ? args : Object.keys(SITES);
 for (const id of ids) {
   for (const [kind, vp] of [['mobile', MOBILE], ['desktop', DESKTOP]]) {
     const ctx = await browser.newContext({
-      viewport: { width: vp.width, height: vp.height },
+      viewport: { width: vp.width, height: (kind === 'mobile' && SETUP[id]?.mobileHeight) || vp.height },
       deviceScaleFactor: vp.scale,
       isMobile: kind === 'mobile',
       hasTouch: kind === 'mobile',
